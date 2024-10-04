@@ -1,4 +1,4 @@
-package ru.mtuci.demo.controller.model;
+package ru.mtuci.demo.model;
 
 public class Demo {
     private String name;
