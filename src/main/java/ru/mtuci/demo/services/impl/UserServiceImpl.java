@@ -1,6 +1,5 @@
 package ru.mtuci.demo.services.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.mtuci.demo.model.User;
@@ -23,5 +22,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public void add(User user) {
         userRepository.save(user);
+    }
+
+    @Override
+    public User getById(Long id) {
+        return userRepository.findById(id).orElse(new User());
+    }
+
+    @Override
+    public User getByName(String name) {
+        return userRepository.findByName(name).orElse(new User());
     }
 }

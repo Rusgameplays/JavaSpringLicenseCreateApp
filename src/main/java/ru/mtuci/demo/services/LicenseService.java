@@ -9,4 +9,8 @@ public interface LicenseService {
     void add(License license);
 
     List<License> getAll();
+
+    License getById(Long id);
+
+    License getByKey(String key);
 }

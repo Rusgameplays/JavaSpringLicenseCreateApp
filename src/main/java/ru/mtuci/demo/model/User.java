@@ -26,8 +26,12 @@ public class User {
     @Column(name="password")
     private String password;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="role")
-    private String role;
+    private ApplicationRole role;
+
+    @Column(name="email")
+    private String email;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<License> licenses;

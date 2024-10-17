@@ -23,4 +23,14 @@ public class LicenseServiceImpl implements LicenseService {
     public List<License> getAll() {
         return licenseRepository.findAll();
     }
+
+    @Override
+    public License getById(Long id) {
+        return licenseRepository.findById(id).orElse(new License());
+    }
+
+    @Override
+    public License getByKey(String key) {
+        return licenseRepository.findByKey(key).orElse(new License());
+    }
 }

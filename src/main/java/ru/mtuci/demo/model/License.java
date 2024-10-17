@@ -22,8 +22,7 @@ public class License {
 
     @Column(name="date")
     private Date date;
-//    @ManyToOne(column)
-//    @Column(name = "idUser")
+
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @JsonBackReference("back")
