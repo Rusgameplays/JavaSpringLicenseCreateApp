@@ -6,6 +6,8 @@ import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.UserService;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +16,7 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public List<User> getAll() {
@@ -22,7 +25,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void add(User user) {
-        userRepository.save(user);
+        if (userRepository.findByName(user.getName()).isEmpty()) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            userRepository.save(user);
+        }
     }
 
     @Override

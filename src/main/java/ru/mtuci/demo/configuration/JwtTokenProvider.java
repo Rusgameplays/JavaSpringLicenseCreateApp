@@ -45,7 +45,10 @@ public class JwtTokenProvider {
     }
     public boolean validateToken(String token) {
         try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token);
             return true;
         } catch (Exception e) {
             return false;
@@ -53,23 +56,21 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token)
-                .getBody();
-
-        return claims.getSubject();
-    }
-
-    public Set<GrantedAuthority> getAuthorities(String token) {
-        Claims claims = Jwts.parserBuilder()
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody();
+                .getBody()
+                .getSubject();
+    }
 
-        Collection<?> roles = claims.get("roles", Collection.class);
-        return roles.stream()
+    public Set<GrantedAuthority> getAuthorities(String token) {
+        return ((Collection<?>) Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("roles", Collection.class)).stream()
                 .map(role -> new SimpleGrantedAuthority((String) role))
                 .collect(Collectors.toSet());
     }
