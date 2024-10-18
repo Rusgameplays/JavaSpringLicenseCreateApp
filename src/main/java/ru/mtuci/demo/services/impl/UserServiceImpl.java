@@ -7,6 +7,7 @@ import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.UserService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
@@ -25,12 +26,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getById(Long id) {
-        return userRepository.findById(id).orElse(new User());
+    public Optional<User> getById(Long id) {
+        return userRepository.findById(id);
     }
 
     @Override
-    public User getByName(String name) {
-        return userRepository.findByName(name).orElse(new User());
+    public Optional<User> getByName(String name) {
+        return userRepository.findByName(name);
     }
 }
