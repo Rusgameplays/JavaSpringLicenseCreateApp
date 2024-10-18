@@ -9,7 +9,7 @@ import ru.mtuci.demo.services.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -32,12 +32,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> getById(Long id) {
-        return userRepository.findById(id);
+    public User getById(UUID id) {
+        return userRepository.findById(id).orElse(new User());
     }
 
     @Override
-    public Optional<User> getByName(String name) {
-        return userRepository.findByName(name);
+    public User getByName(String name)  {
+        return userRepository.findByName(name).orElse(new User());
     }
+
 }

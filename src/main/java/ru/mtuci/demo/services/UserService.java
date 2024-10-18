@@ -4,12 +4,11 @@ import ru.mtuci.demo.model.User;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface UserService {
     List<User> getAll();
     void add(User user);
-
-    Optional<User> getById(Long id);
-
-    Optional<User> getByName(String name);
+    User getById(UUID id);
+    User getByName(String name);
 }

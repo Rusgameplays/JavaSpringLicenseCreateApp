@@ -13,7 +13,8 @@ import ru.mtuci.demo.repo.UserRepository;
 
 @RequiredArgsConstructor
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService {
+public final class UserDetailsServiceImpl implements UserDetailsService {
+
     private final UserRepository userRepository;
 
     @Override
@@ -21,4 +22,5 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return UserDetailsImpl.fromUser(userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found")));
     }
+
 }

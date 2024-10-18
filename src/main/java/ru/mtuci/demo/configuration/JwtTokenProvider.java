@@ -1,6 +1,5 @@
 package ru.mtuci.demo.configuration;
 
-
 import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
@@ -13,7 +12,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -35,20 +33,20 @@ public class JwtTokenProvider {
 
     public String createToken(String username, Set<GrantedAuthority> authorities) {
         return Jwts.builder()
-                .setSubject(username)
+                .subject(username)
                 .claim("roles", authorities.stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey())
                 .compact();
     }
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
             return false;
@@ -56,21 +54,19 @@ public class JwtTokenProvider {
     }
 
     public String getUsername(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .parseSignedClaims(token)
+                .getPayload().getSubject();
     }
 
     public Set<GrantedAuthority> getAuthorities(String token) {
-        return ((Collection<?>) Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return ((Collection<?>) Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("roles", Collection.class)).stream()
+                .parseSignedClaims(token)
+                .getPayload().get("roles", Collection.class)).stream()
                 .map(role -> new SimpleGrantedAuthority((String) role))
                 .collect(Collectors.toSet());
     }
