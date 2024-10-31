@@ -34,7 +34,7 @@ public class JwtTokenProvider {
     public String createToken(String username, Set<GrantedAuthority> authorities) {
         return Jwts.builder()
                 .subject(username)
-                .claim("roles", authorities.stream()
+                .claim("auth", authorities.stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
@@ -66,7 +66,7 @@ public class JwtTokenProvider {
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
-                .getPayload().get("roles", Collection.class)).stream()
+                .getPayload().get("auth", Collection.class)).stream()
                 .map(role -> new SimpleGrantedAuthority((String) role))
                 .collect(Collectors.toSet());
     }

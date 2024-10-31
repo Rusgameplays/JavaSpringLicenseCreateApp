@@ -19,9 +19,15 @@ public class License {
     @Id
     @Column(name="key")
     private String key;
+    @Column(name="activationDate")
+    private Date activationDate;
+    @Column(name="expirationDate")
+    private Date expirationDate;
+    @Column(name="blocked")
+    private Boolean blocked;
+    @Column(name="deviceId")
+    private String deviceId;
 
-    @Column(name="date")
-    private Date date;
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
