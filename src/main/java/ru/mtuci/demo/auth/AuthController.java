@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import ru.mtuci.demo.configuration.JwtTokenProvider;
 import ru.mtuci.demo.services.UserService;
-import ru.mtuci.demo.services.impl.UserAlreadyCreate;
+import ru.mtuci.demo.exception.UserAlreadyCreate;
 
 
 @RequiredArgsConstructor
@@ -28,25 +28,25 @@ public class AuthController {
     private final JwtTokenProvider jwtProvider;
     private final UserService userService;
 
-    @PostMapping("/signin")
-    public ResponseEntity<?> signin(@RequestBody SignInRequest request) {
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            return ResponseEntity.ok(new SignInResponse(request.getEmail(), jwtProvider.createToken(request.getEmail(),
+            return ResponseEntity.ok(new LoginResponse(request.getEmail(), jwtProvider.createToken(request.getEmail(),
                     authenticationManager
                             .authenticate(
                                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()))
                             .getAuthorities().stream().collect(Collectors.toSet()))));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid password");
+                    .body("Incorrect password");
         }
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody RegRequest request) {
+    @PostMapping("/reg")
+    public ResponseEntity<?> register(@RequestBody RegRequest request) {
         try {
             userService.create(request.getEmail(), request.getName(), request.getPassword());
-            return ResponseEntity.ok("User created");
+            return ResponseEntity.ok("Successful");
         } catch (UserAlreadyCreate ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ex.getMessage());

@@ -2,6 +2,7 @@ package ru.mtuci.demo.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.mtuci.demo.exception.UserAlreadyCreate;
 import ru.mtuci.demo.model.ApplicationRole;
 import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.repo.UserRepository;

@@ -1,4 +1,4 @@
-package ru.mtuci.demo.services.impl;
+package ru.mtuci.demo.exception;
 
 public class UserAlreadyCreate extends RuntimeException {
     public UserAlreadyCreate(String email) {

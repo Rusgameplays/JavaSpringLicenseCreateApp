@@ -1,10 +1,9 @@
 package ru.mtuci.demo.services;
 
 import ru.mtuci.demo.model.User;
-import ru.mtuci.demo.services.impl.UserAlreadyCreate;
+import ru.mtuci.demo.exception.UserAlreadyCreate;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
