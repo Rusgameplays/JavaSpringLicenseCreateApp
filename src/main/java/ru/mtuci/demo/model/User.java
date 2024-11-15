@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -18,25 +17,33 @@ import java.util.UUID;
 @Table(name="users")
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name="id")
-    private UUID id;
+    @GeneratedValue
+    private Long id;
 
-    @Column(name="name")
+    @Column(unique = true)
+    private String email;
+
     private String name;
 
-    @Column(name="password")
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="role")
     private ApplicationRole role;
-
-    @Column(name="email")
-    private String email;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("user")
-    private List<License> licenses;
+    private List<Device> devices;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("user")
+    private List<LicenseHistory> licenseHistories;
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("owner")
+    private List<License> ownedLicenses;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("user")
+    private List<License> usedLicenses;
 
 }

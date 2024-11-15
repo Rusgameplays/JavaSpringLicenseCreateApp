@@ -1,5 +1,4 @@
 package ru.mtuci.demo.model;
-
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -20,9 +19,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-@Table(name = "products")
+@Table(name = "license_types")
 @Entity
-public final class Product {
+public class LicenseType {
     @Id
     @GeneratedValue
     private Long id;
@@ -30,9 +29,10 @@ public final class Product {
     @Column(unique = true)
     private String name;
 
-    private Boolean blocked;
+    private Integer defaultDuration;
+    private String description;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("product")
+    @OneToMany(mappedBy = "licenseType", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("licenseType")
     private List<License> license;
 }

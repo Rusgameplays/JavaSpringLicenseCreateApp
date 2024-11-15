@@ -12,7 +12,6 @@ import ru.mtuci.demo.services.UserService;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-import java.util.UUID;
 
 @RequiredArgsConstructor
 @RequestMapping("users")
@@ -28,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public User getById(@PathVariable("id") UUID id) {
+    public User getById(@PathVariable("id") Long id) {
         return userService.getById(id);
     }
 

@@ -1,6 +1,8 @@
 package ru.mtuci.demo.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -17,24 +20,40 @@ import java.util.Date;
 @Table(name="licenses")
 public class License {
     @Id
-    @Column(name="key")
+    @GeneratedValue
+    private Long id;
+
+    @Column(unique = true)
     private String key;
 
-    @Column(name="activationDate")
-    private Date activationDate;
-
-    @Column(name="expirationDate")
-    private Date expirationDate;
-
-    @Column(name="blocked")
-    private Boolean blocked;
-
-    @Column(name="deviceId")
-    private String deviceId;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", referencedColumnName = "id")
+    private User owner;
 
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
-    @JsonBackReference("back")
     private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "product_id", referencedColumnName = "id")
+    private Product product;
+
+    @ManyToOne
+    @JoinColumn(name = "type_id", referencedColumnName = "id")
+    private LicenseType licenseType;
+
+    private Date activationDate;
+    private Date expirationDate;
+    private Boolean blocked;
+    private Integer maxDevices;
+    private String description;
+
+    @OneToMany(mappedBy = "license", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("license")
+    private List<LicenseHistory> licenseHistories;
+
+    @OneToMany(mappedBy = "license", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("license")
+    private List<DeviceLicense> deviceLicenses;
 
 }

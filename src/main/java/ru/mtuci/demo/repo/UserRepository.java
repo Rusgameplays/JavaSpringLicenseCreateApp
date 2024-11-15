@@ -5,11 +5,9 @@ import org.springframework.stereotype.Repository;
 import ru.mtuci.demo.model.User;
 
 import java.util.Optional;
-import java.util.UUID;
-
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByName(String name);
     Optional<User> findByEmail(String email);
 
