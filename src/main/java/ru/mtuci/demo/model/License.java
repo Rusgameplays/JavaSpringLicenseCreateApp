@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -56,4 +57,19 @@ public class License {
     @JsonIgnoreProperties("license")
     private List<DeviceLicense> deviceLicenses;
 
+    public void setActivationCode(String activationCode) {
+        this.key = activationCode;
+    }
+
+    public String getActivationCode() {
+        return key;
+    }
+
+    public Date getEndDate() {
+        return expirationDate;
+    }
+
+    public void setEndDate(Date endDate) {
+        this.expirationDate = endDate;
+    }
 }

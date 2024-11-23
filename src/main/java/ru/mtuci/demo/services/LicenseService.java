@@ -13,4 +13,6 @@ public interface LicenseService {
     License getById(Long id);
 
     License getByKey(String key);
+
+    License createLicense(Long productId, Long ownerId, Long licenseTypeId);
 }

@@ -35,4 +35,5 @@ public class LicenseType {
     @OneToMany(mappedBy = "licenseType", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("licenseType")
     private List<License> license;
+
 }

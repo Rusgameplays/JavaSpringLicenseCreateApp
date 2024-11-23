@@ -24,13 +24,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-    @Override
-    public void add(User user) {
-        if (userRepository.findByName(user.getName()).isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-            userRepository.save(user);
-        }
-    }
 
     @Override
     public User getById(Long id) {
@@ -50,6 +43,17 @@ public class UserServiceImpl implements UserService {
         user.setName(name);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(ApplicationRole.USER);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void createAdmin(String email, String name, String password) throws UserAlreadyCreate {
+        if (userRepository.findByEmail(email).isPresent()) throw new UserAlreadyCreate(email);
+        var user = new User();
+        user.setEmail(email);
+        user.setName(name);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(ApplicationRole.ADMIN);
         userRepository.save(user);
     }
 

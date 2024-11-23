@@ -8,9 +8,10 @@ import java.util.UUID;
 
 public interface UserService {
     List<User> getAll();
-    void add(User user);
     User getById(Long id);
     User getByName(String name);
 
     void create(String email, String name, String password) throws UserAlreadyCreate;
+
+    void createAdmin(String email, String name, String password) throws UserAlreadyCreate;
 }

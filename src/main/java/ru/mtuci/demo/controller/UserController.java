@@ -36,8 +36,4 @@ public class UserController {
         return userService.getByName(name);
     }
 
-    @PostMapping("/add")
-    public void add(@RequestBody User user) {
-        userService.add(user);
-    }
 }
