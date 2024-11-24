@@ -7,10 +7,10 @@ import ru.mtuci.demo.exception.TypeofLicenseNull;
 import ru.mtuci.demo.exception.UserNull;
 import ru.mtuci.demo.model.*;
 import ru.mtuci.demo.repo.LicenseRepository;
-import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.*;
+import ru.mtuci.demo.ticket.Ticket;
+import ru.mtuci.demo.ticket.TicketSigner;
 
-import java.time.LocalDate;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -43,7 +43,7 @@ public class LicenseServiceImpl implements LicenseService {
 
     @Override
     public License getByKey(String key) {
-        return licenseRepository.findByKey(key).orElse(new License());
+        return licenseRepository.findByKey(key).orElse(null);
     }
 
     public Date calculateEndDate(LicenseType licenseType) {
@@ -87,9 +87,9 @@ public class LicenseServiceImpl implements LicenseService {
         do {
             activationCode = UUID.randomUUID().toString();
         } while (licenseRepository.existsByKey(activationCode));
-        license.setActivationCode(activationCode);
+        license.setKey(activationCode);
 
-        license.setEndDate(calculateEndDate(licenseType));
+        license.setExpirationDate(calculateEndDate(licenseType));
 
         licenseRepository.save(license);
 
@@ -97,4 +97,47 @@ public class LicenseServiceImpl implements LicenseService {
 
         return license;
     }
+
+    @Override
+    public boolean validateActivation(License license, Device device, User user) {
+        if (license.getBlocked() || license.getExpirationDate().before(new Date())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public void updateLicense(License license, User user) {
+        license.setOwner(user);
+        license.setBlocked(false);
+        license.setActivationDate(new Date());
+        license.setBlocked(false);
+
+        licenseRepository.save(license);
+    }
+
+
+    @Override
+    public Ticket generateTicket(License license, Device device) {
+
+        Ticket ticket = new Ticket();
+        ticket.setServerDate(new Date());
+        ticket.setTicketLifetime(license.getLicenseType().getDefaultDuration() != null
+                ? license.getLicenseType().getDefaultDuration().longValue() * 30 * 24 * 60 * 60 * 1000
+                : 0L);
+        ticket.setActivationDate(license.getActivationDate());
+        ticket.setExpirationDate(license.getExpirationDate());
+        ticket.setUserId(license.getOwner().getId());
+        ticket.setDeviceId(device.getMac());
+        ticket.setLicenseBlocked(license.getBlocked() != null ? license.getBlocked().toString() : "null");
+
+        String serializedTicket = TicketSigner.serializeTicket(ticket);
+        String digitalSignature = Ticket.DigitalSignatureUtil.generateSignature(serializedTicket);
+        ticket.setDigitalSignature(digitalSignature);
+
+        return ticket;
+    }
+
+
+
 }

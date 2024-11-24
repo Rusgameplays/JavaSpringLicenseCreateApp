@@ -5,15 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ru.mtuci.demo.controller.requests.LicenseRequest;
 import ru.mtuci.demo.exception.UserNull;
 import ru.mtuci.demo.model.License;
-import ru.mtuci.demo.model.LicenseType;
-import ru.mtuci.demo.model.Product;
-import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.services.LicenseService;
-import ru.mtuci.demo.services.LicenseTypeService;
-import ru.mtuci.demo.services.ProductService;
-import ru.mtuci.demo.services.UserService;
 
 import java.util.List;
 

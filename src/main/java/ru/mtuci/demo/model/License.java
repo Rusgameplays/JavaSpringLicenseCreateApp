@@ -27,7 +27,8 @@ public class License {
     @Column(unique = true)
     private String key;
 
-    @ManyToOne
+    @Getter
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "owner_id", referencedColumnName = "id")
     private User owner;
 
@@ -57,19 +58,8 @@ public class License {
     @JsonIgnoreProperties("license")
     private List<DeviceLicense> deviceLicenses;
 
-    public void setActivationCode(String activationCode) {
-        this.key = activationCode;
+    public Boolean getBlocked() {
+        return blocked != null ? blocked : false;
     }
 
-    public String getActivationCode() {
-        return key;
-    }
-
-    public Date getEndDate() {
-        return expirationDate;
-    }
-
-    public void setEndDate(Date endDate) {
-        this.expirationDate = endDate;
-    }
 }
