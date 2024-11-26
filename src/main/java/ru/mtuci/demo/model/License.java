@@ -43,11 +43,10 @@ public class License {
     @ManyToOne
     @JoinColumn(name = "type_id", referencedColumnName = "id")
     private LicenseType licenseType;
-
+    private Integer maxDevices;
     private Date activationDate;
     private Date expirationDate;
     private Boolean blocked;
-    private Integer maxDevices;
     private String description;
 
     @OneToMany(mappedBy = "license", cascade = CascadeType.ALL)

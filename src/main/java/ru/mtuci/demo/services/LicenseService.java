@@ -22,4 +22,14 @@ public interface LicenseService {
     Ticket generateTicket(License license, Device device);
 
     License createLicense(Long productId, Long ownerId, Long licenseTypeId);
+
+    List<License> getActiveLicensesForUser(User authenticatedUser);
+
+    License renewLicense(License license, String mac);
+
+    License getByUser(User user);
+
+    void delete(License oldLicense);
+
+    long countActiveDevicesForUser(User user);
 }

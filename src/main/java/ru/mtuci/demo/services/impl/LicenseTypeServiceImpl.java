@@ -33,4 +33,6 @@ public class LicenseTypeServiceImpl implements LicenseTypeService {
     public List<LicenseType> getAllLicenseTypes() {
         return licenseTypeRepository.findAll();
     }
+
+
 }

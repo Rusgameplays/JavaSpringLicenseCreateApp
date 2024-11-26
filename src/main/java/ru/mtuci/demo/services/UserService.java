@@ -14,4 +14,5 @@ public interface UserService {
     void create(String email, String name, String password) throws UserAlreadyCreate;
 
     void createAdmin(String email, String name, String password) throws UserAlreadyCreate;
+
 }

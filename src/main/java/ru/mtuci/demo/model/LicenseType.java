@@ -30,6 +30,7 @@ public class LicenseType {
     private String name;
 
     private Integer defaultDuration;
+    private Integer maxDevices;
     private String description;
 
     @OneToMany(mappedBy = "licenseType", cascade = CascadeType.ALL)

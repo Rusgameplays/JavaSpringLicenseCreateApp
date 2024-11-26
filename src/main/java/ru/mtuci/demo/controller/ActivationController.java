@@ -12,6 +12,7 @@ import ru.mtuci.demo.model.Device;
 import ru.mtuci.demo.model.License;
 import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.repo.UserRepository;
+import ru.mtuci.demo.services.DeviceLicenseService;
 import ru.mtuci.demo.services.DeviceService;
 import ru.mtuci.demo.services.LicenseHistoryService;
 import ru.mtuci.demo.services.LicenseService;
@@ -25,14 +26,13 @@ public class ActivationController {
     private final DeviceService deviceService;
     private final LicenseHistoryService licenseHistoryService;
     private final UserRepository userRepository;
+    private final DeviceLicenseService deviceLicenseService;
 
 
     @PostMapping("/activate")
     public ResponseEntity<?> activateLicense(@RequestBody LicenseActivationRequest request) {
         try {
             User authenticatedUser = getAuthenticatedUser();
-
-            Device device = deviceService.registerOrUpdateDevice(request.getDeviceRequest());
 
             User user = userRepository.findById(request.getDeviceRequest().getUserId())
                     .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
@@ -46,10 +46,19 @@ public class ActivationController {
                 return ResponseEntity.badRequest().body("Лицензия уже была активирована");
             }
 
+            Device device = deviceService.registerOrUpdateDevice(request.getDeviceRequest());
+
             boolean activationValid = licenseService.validateActivation(license, device, authenticatedUser);
             if (!activationValid) {
                 return ResponseEntity.badRequest().body("Активация невозможна");
             }
+
+            long activeDeviceCount = licenseService.countActiveDevicesForUser(user);
+            if (activeDeviceCount >= license.getMaxDevices()) {
+                return ResponseEntity.badRequest().body("Превышено максимальное количество устройств для данной лицензии");
+            }
+
+            deviceLicenseService.addDeviceToLicense(license, device);
 
             license.setUser(user);
             licenseService.updateLicense(license, authenticatedUser);
@@ -57,6 +66,7 @@ public class ActivationController {
             licenseHistoryService.recordLicenseChange(license, authenticatedUser, "Activated", "Лицензия успешно активирована");
 
             Ticket fullTicket = licenseService.generateTicket(license, device);
+
             Ticket responseTicket = new Ticket();
             responseTicket.setServerDate(fullTicket.getServerDate());
             responseTicket.setTicketLifetime(fullTicket.getTicketLifetime());
@@ -66,12 +76,17 @@ public class ActivationController {
             responseTicket.setDeviceId(fullTicket.getDeviceId());
             responseTicket.setLicenseBlocked(fullTicket.getLicenseBlocked());
             responseTicket.setDigitalSignature(fullTicket.getDigitalSignature());
+
             return ResponseEntity.ok(responseTicket);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
         }
     }
+
+
+
+
 
 
     private User getAuthenticatedUser() {

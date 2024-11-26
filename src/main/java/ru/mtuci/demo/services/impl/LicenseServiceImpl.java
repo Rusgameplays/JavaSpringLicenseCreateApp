@@ -6,11 +6,15 @@ import ru.mtuci.demo.exception.ProductNull;
 import ru.mtuci.demo.exception.TypeofLicenseNull;
 import ru.mtuci.demo.exception.UserNull;
 import ru.mtuci.demo.model.*;
+import ru.mtuci.demo.repo.DeviceLicenseRepository;
+import ru.mtuci.demo.repo.DeviceRepository;
 import ru.mtuci.demo.repo.LicenseRepository;
 import ru.mtuci.demo.services.*;
 import ru.mtuci.demo.ticket.Ticket;
 import ru.mtuci.demo.ticket.TicketSigner;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -25,6 +29,7 @@ public class LicenseServiceImpl implements LicenseService {
     private final UserService userService;
     private final LicenseTypeService licenseTypeService;
     private final LicenseHistoryService licenseHistoryService;
+    private final DeviceLicenseRepository deviceLicenseRepository;
 
     @Override
     public void add(License license) {
@@ -78,10 +83,12 @@ public class LicenseServiceImpl implements LicenseService {
             throw new TypeofLicenseNull();
         }
 
+
         License license = new License();
         license.setProduct(product);
         license.setOwner(user);
         license.setLicenseType(licenseType);
+        license.setMaxDevices(licenseType.getMaxDevices());
 
         String activationCode;
         do {
@@ -116,6 +123,10 @@ public class LicenseServiceImpl implements LicenseService {
         licenseRepository.save(license);
     }
 
+    public List<License> getActiveLicensesForUser(User user) {
+        return licenseRepository.findByUserAndActivationDateNotNullAndExpirationDateAfter(user, new Date());
+    }
+
 
     @Override
     public Ticket generateTicket(License license, Device device) {
@@ -127,7 +138,11 @@ public class LicenseServiceImpl implements LicenseService {
                 : 0L);
         ticket.setActivationDate(license.getActivationDate());
         ticket.setExpirationDate(license.getExpirationDate());
-        ticket.setUserId(license.getOwner().getId());
+        if (device.getUser() != null) {
+            ticket.setUserId(device.getUser().getId());
+        } else {
+            ticket.setUserId(null);
+        }
         ticket.setDeviceId(device.getMac());
         ticket.setLicenseBlocked(license.getBlocked() != null ? license.getBlocked().toString() : "null");
 
@@ -137,6 +152,65 @@ public class LicenseServiceImpl implements LicenseService {
 
         return ticket;
     }
+
+    @Override
+    public License renewLicense(License oldLicense, String mac) {
+
+
+        Integer defaultDuration = oldLicense.getLicenseType().getDefaultDuration();
+
+
+        LocalDate currentExpirationDate = oldLicense.getExpirationDate().toInstant()
+                .atZone(ZoneId.systemDefault()).toLocalDate();
+
+
+        LocalDate newExpirationDate = currentExpirationDate.plusMonths(defaultDuration);
+
+        Date newExpiration = Date.from(newExpirationDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+
+        oldLicense.setExpirationDate(newExpiration);
+        oldLicense.setActivationDate(new Date());
+
+        oldLicense.setUser(oldLicense.getUser());
+        oldLicense.setBlocked(oldLicense.getBlocked());
+
+        licenseRepository.delete(oldLicense);
+
+        License newLicense = new License();
+        newLicense.setActivationDate(new Date());
+        newLicense.setExpirationDate(newExpiration);
+        newLicense.setUser(oldLicense.getUser());
+        newLicense.setBlocked(oldLicense.getBlocked());
+
+        licenseRepository.save(newLicense);
+
+        return newLicense;
+    }
+
+
+    public License getByUser(User user) {
+        return licenseRepository.findByUser(user);
+    }
+
+    public void delete(License license) {
+        licenseRepository.delete(license);  // Удаление лицензии
+    }
+
+    public long countActiveDevicesForUser(User user) {
+
+        List<License> userLicenses = licenseRepository.findAllByUser(user);
+
+        long activeDeviceCount = 0;
+
+        for (License license : userLicenses) {
+            activeDeviceCount += deviceLicenseRepository.countByLicenseAndActivationDateIsNotNull(license);
+        }
+
+        return activeDeviceCount;
+    }
+
+
 
 
 

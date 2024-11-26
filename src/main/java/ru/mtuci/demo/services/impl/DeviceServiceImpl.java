@@ -1,5 +1,6 @@
 package ru.mtuci.demo.services.impl;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.mtuci.demo.controller.requests.DeviceRequest;
@@ -33,6 +34,8 @@ public class DeviceServiceImpl implements DeviceService {
 
         return deviceRepository.save(device);
     }
+
+
     private String getLocalMacAddress() {
         String macAddress;
         do {
@@ -59,4 +62,12 @@ public class DeviceServiceImpl implements DeviceService {
         return macAddress.toString();
     }
 
+    public Device findDeviceByInfo(String name, String mac) {
+        return deviceRepository.findByNameAndMac(name, mac).orElse(null);
+    }
+
+    public Device getByMac(String mac) {
+        return deviceRepository.findByMac(mac)
+                .orElseThrow(() -> new EntityNotFoundException("Устройство с MAC-адресом " + mac + " не найдено"));
+    }
 }

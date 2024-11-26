@@ -35,6 +35,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByName(name).orElse(new User());
     }
 
+
     @Override
     public void create(String email, String name, String password) throws UserAlreadyCreate {
         if (userRepository.findByEmail(email).isPresent()) throw new UserAlreadyCreate(email);
