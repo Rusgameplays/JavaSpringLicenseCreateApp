@@ -83,12 +83,12 @@ public class LicenseServiceImpl implements LicenseService {
             throw new TypeofLicenseNull();
         }
 
-
         License license = new License();
         license.setProduct(product);
         license.setOwner(user);
         license.setLicenseType(licenseType);
         license.setMaxDevices(licenseType.getMaxDevices());
+        license.setFlagForBlocked(false);
 
         String activationCode;
         do {
@@ -105,13 +105,6 @@ public class LicenseServiceImpl implements LicenseService {
         return license;
     }
 
-    @Override
-    public boolean validateActivation(License license, Device device, User user) {
-        if (license.getBlocked() || license.getExpirationDate().before(new Date())) {
-            return false;
-        }
-        return true;
-    }
 
     @Override
     public void updateLicense(License license, User user) {
@@ -126,7 +119,6 @@ public class LicenseServiceImpl implements LicenseService {
     public List<License> getActiveLicensesForUser(User user) {
         return licenseRepository.findByUserAndActivationDateNotNullAndExpirationDateAfter(user, new Date());
     }
-
 
     @Override
     public Ticket generateTicket(License license, Device device) {
@@ -153,61 +145,22 @@ public class LicenseServiceImpl implements LicenseService {
         return ticket;
     }
 
+
     @Override
-    public License renewLicense(License oldLicense, String mac) {
-
-
-        Integer defaultDuration = oldLicense.getLicenseType().getDefaultDuration();
-
-
-        LocalDate currentExpirationDate = oldLicense.getExpirationDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
-
-
-        LocalDate newExpirationDate = currentExpirationDate.plusMonths(defaultDuration);
-
-        Date newExpiration = Date.from(newExpirationDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-
-
-        oldLicense.setExpirationDate(newExpiration);
-        oldLicense.setActivationDate(new Date());
-
-        oldLicense.setUser(oldLicense.getUser());
-        oldLicense.setBlocked(oldLicense.getBlocked());
-
-        licenseRepository.delete(oldLicense);
-
-        License newLicense = new License();
-        newLicense.setActivationDate(new Date());
-        newLicense.setExpirationDate(newExpiration);
-        newLicense.setUser(oldLicense.getUser());
-        newLicense.setBlocked(oldLicense.getBlocked());
-
-        licenseRepository.save(newLicense);
-
-        return newLicense;
-    }
-
-
-    public License getByUser(User user) {
-        return licenseRepository.findByUser(user);
-    }
-
-    public void delete(License license) {
-        licenseRepository.delete(license);  // Удаление лицензии
-    }
-
-    public long countActiveDevicesForUser(User user) {
-
-        List<License> userLicenses = licenseRepository.findAllByUser(user);
-
-        long activeDeviceCount = 0;
-
-        for (License license : userLicenses) {
-            activeDeviceCount += deviceLicenseRepository.countByLicenseAndActivationDateIsNotNull(license);
+    public void update(License license) {
+        if (license == null || license.getId() == null) {
+            throw new IllegalArgumentException("Лицензия или её ID не может быть null");
         }
+        licenseRepository.save(license);
+    }
 
-        return activeDeviceCount;
+    public long countActiveDevicesForLicense(License license) {
+
+        return deviceLicenseRepository.countByLicenseAndActivationDateIsNotNull(license);
+    }
+
+    public List<License> getByProduct(Product product) {
+        return licenseRepository.findByProduct(product);
     }
 
 

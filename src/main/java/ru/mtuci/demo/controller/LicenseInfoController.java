@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mtuci.demo.model.Device;
+import ru.mtuci.demo.model.DeviceLicense;
 import ru.mtuci.demo.model.License;
 import ru.mtuci.demo.model.User;
+import ru.mtuci.demo.repo.DeviceLicenseRepository;
 import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.DeviceService;
 import ru.mtuci.demo.services.LicenseService;
@@ -27,30 +29,29 @@ public class LicenseInfoController {
 
     private final DeviceService deviceService;
     private final LicenseService licenseService;
+    private final DeviceLicenseRepository deviceLicenseRepository;
 
 
     @GetMapping("/info")
     public ResponseEntity<?> getLicenseInfo(
-            @RequestParam String deviceName,
             @RequestParam String mac) {
         try {
-            Device device = deviceService.findDeviceByInfo(deviceName, mac);
+            Device device = deviceService.getByMac(mac);
             if (device == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Устройство не найдено");
             }
 
-            User owner = device.getUser();
-            if (owner == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Пользователь, которому принадлежит устройство, не найден");
+            DeviceLicense deviceLicense = deviceLicenseRepository.findByDeviceId(device.getId());
+            if (deviceLicense == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия для устройства не найдена");
             }
 
-            List<License> activeLicenses = licenseService.getActiveLicensesForUser(owner);
-            if (activeLicenses.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Активные лицензии не найдены");
+            License license = deviceLicense.getLicense();
+            if (license == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия не найдена");
             }
 
-            License firstLicense = activeLicenses.get(0);
-            Ticket ticket = licenseService.generateTicket(firstLicense, device);
+            Ticket ticket = licenseService.generateTicket(license, device);
 
             return ResponseEntity.ok(ticket);
 
@@ -58,5 +59,6 @@ public class LicenseInfoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
         }
     }
+
 
 }

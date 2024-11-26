@@ -36,7 +36,7 @@ public class Ticket {
         private static final String HMAC_SHA256 = "HmacSHA256";
 
 
-        private static final String SECRET_KEY = "key"; //Скрою позже
+        private final static String SECRET_KEY = "key"; //Скрою позже
 
         public static String generateSignature(String data) {
             try {

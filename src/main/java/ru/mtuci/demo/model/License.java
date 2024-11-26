@@ -47,7 +47,8 @@ public class License {
     private Date activationDate;
     private Date expirationDate;
     private Boolean blocked;
-    private String description;
+
+    private Boolean flagForBlocked;
 
     @OneToMany(mappedBy = "license", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("license")

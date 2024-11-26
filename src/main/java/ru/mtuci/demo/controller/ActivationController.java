@@ -17,6 +17,12 @@ import ru.mtuci.demo.services.DeviceService;
 import ru.mtuci.demo.services.LicenseHistoryService;
 import ru.mtuci.demo.services.LicenseService;
 import ru.mtuci.demo.ticket.Ticket;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api")
@@ -42,52 +48,45 @@ public class ActivationController {
                 return ResponseEntity.badRequest().body("Лицензия не найдена");
             }
 
-            if (license.getActivationDate() != null) {
-                return ResponseEntity.badRequest().body("Лицензия уже была активирована");
+            if (license.getUser() != null && !license.getUser().getId().equals(user.getId())) {
+                return ResponseEntity.badRequest().body("Невозможно активировать лицензию на другого пользователя");
             }
 
-            Device device = deviceService.registerOrUpdateDevice(request.getDeviceRequest());
-
-            boolean activationValid = licenseService.validateActivation(license, device, authenticatedUser);
-            if (!activationValid) {
-                return ResponseEntity.badRequest().body("Активация невозможна");
-            }
-
-            long activeDeviceCount = licenseService.countActiveDevicesForUser(user);
+            long activeDeviceCount = licenseService.countActiveDevicesForLicense(license);
             if (activeDeviceCount >= license.getMaxDevices()) {
                 return ResponseEntity.badRequest().body("Превышено максимальное количество устройств для данной лицензии");
             }
+            Device device = deviceService.registerOrUpdateDevice(request.getDeviceRequest());
 
             deviceLicenseService.addDeviceToLicense(license, device);
 
-            license.setUser(user);
+            if (license.getUser() == null) {
+                license.setUser(user);
+            }
+            Integer defaultDuration = license.getLicenseType().getDefaultDuration();
+
+            LocalDateTime currentDateTime = LocalDateTime.now();
+            LocalDate currentExpirationDate = currentDateTime.toLocalDate();
+
+            LocalDate newExpirationDate = currentExpirationDate.plusMonths(defaultDuration);
+            Date newExpiration = Date.from(newExpirationDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+            if (license.getExpirationDate() == null || newExpiration.after(license.getExpirationDate())) {
+                license.setExpirationDate(newExpiration);
+            }
+
             licenseService.updateLicense(license, authenticatedUser);
 
             licenseHistoryService.recordLicenseChange(license, authenticatedUser, "Activated", "Лицензия успешно активирована");
 
             Ticket fullTicket = licenseService.generateTicket(license, device);
 
-            Ticket responseTicket = new Ticket();
-            responseTicket.setServerDate(fullTicket.getServerDate());
-            responseTicket.setTicketLifetime(fullTicket.getTicketLifetime());
-            responseTicket.setActivationDate(fullTicket.getActivationDate());
-            responseTicket.setExpirationDate(fullTicket.getExpirationDate());
-            responseTicket.setUserId(fullTicket.getUserId());
-            responseTicket.setDeviceId(fullTicket.getDeviceId());
-            responseTicket.setLicenseBlocked(fullTicket.getLicenseBlocked());
-            responseTicket.setDigitalSignature(fullTicket.getDigitalSignature());
-
-            return ResponseEntity.ok(responseTicket);
+            return ResponseEntity.ok(fullTicket);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
         }
     }
-
-
-
-
-
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -97,8 +96,4 @@ public class ActivationController {
         }
         return null;
     }
-
-
-
-
 }

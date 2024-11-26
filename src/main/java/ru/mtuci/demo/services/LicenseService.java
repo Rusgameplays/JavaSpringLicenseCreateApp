@@ -2,6 +2,7 @@ package ru.mtuci.demo.services;
 
 import ru.mtuci.demo.model.Device;
 import ru.mtuci.demo.model.License;
+import ru.mtuci.demo.model.Product;
 import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.ticket.Ticket;
 
@@ -16,7 +17,6 @@ public interface LicenseService {
 
     License getByKey(String key);
 
-    boolean validateActivation(License license, Device device, User user);
     void updateLicense(License license, User user);
 
     Ticket generateTicket(License license, Device device);
@@ -25,11 +25,11 @@ public interface LicenseService {
 
     List<License> getActiveLicensesForUser(User authenticatedUser);
 
-    License renewLicense(License license, String mac);
 
-    License getByUser(User user);
 
-    void delete(License oldLicense);
+    void update(License license);
 
-    long countActiveDevicesForUser(User user);
+    List<License> getByProduct(Product product);
+    long countActiveDevicesForLicense(License license);
+
 }

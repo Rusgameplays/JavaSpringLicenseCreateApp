@@ -8,5 +8,6 @@ import java.util.Optional;
 public interface ProductService {
     Product getProductById(Long id);
     Product addProduct(Product product);
-    List<Product> getAllProducts();
+    Product getById(Long id);
+    void update(Product product);
 }
