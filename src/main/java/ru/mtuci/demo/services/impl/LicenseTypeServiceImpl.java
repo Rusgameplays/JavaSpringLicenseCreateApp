@@ -14,6 +14,10 @@ public class LicenseTypeServiceImpl implements LicenseTypeService {
     @Autowired
     private LicenseTypeRepository licenseTypeRepository;
 
+    public void deleteById(Long id) {
+        licenseTypeRepository.deleteById(id);
+    }
+
     @Override
     public LicenseType getLicenseTypeById(Long id) {
         return licenseTypeRepository.findById(id)

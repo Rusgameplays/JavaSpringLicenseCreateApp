@@ -18,4 +18,7 @@ public interface LicenseRepository extends JpaRepository<License, Long> {
     List<License> findByUserAndActivationDateNotNullAndExpirationDateAfter(User owner, Date currentDate);
     void delete(License license);
     List<License> findByProduct(Product product);
+    boolean existsByProductId(Long productId);
+    boolean existsByLicenseTypeId(Long licenseTypeId);
+    boolean existsByUserId(Long userId);
 }

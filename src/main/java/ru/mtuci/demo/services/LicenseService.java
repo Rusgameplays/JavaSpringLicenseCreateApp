@@ -32,4 +32,11 @@ public interface LicenseService {
     List<License> getByProduct(Product product);
     long countActiveDevicesForLicense(License license);
 
+    void deleteById(Long id);
+
+    License findById(Long id);
+
+    boolean existsByProductId(Long id);
+
+    boolean existsByLicenseTypeId(Long id);
 }

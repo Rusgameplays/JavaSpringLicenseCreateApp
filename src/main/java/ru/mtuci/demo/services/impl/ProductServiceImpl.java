@@ -16,6 +16,11 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    public void deleteById(Long id) {
+        productRepository.deleteById(id);
+    }
+
+
     @Override
     public Product getProductById(Long id) {
         return productRepository.findById(id)

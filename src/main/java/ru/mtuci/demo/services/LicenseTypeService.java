@@ -7,4 +7,5 @@ import java.util.List;
 public interface LicenseTypeService {
     LicenseType getLicenseTypeById(Long id);
     LicenseType addLicenseType(LicenseType licenseType);
+    void deleteById(Long id);
 }

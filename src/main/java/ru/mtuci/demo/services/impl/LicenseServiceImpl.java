@@ -36,6 +36,23 @@ public class LicenseServiceImpl implements LicenseService {
         licenseRepository.save(license);
     }
 
+    public boolean existsByLicenseTypeId(Long licenseTypeId) {
+        return licenseRepository.existsByLicenseTypeId(licenseTypeId);
+    }
+
+    public boolean existsByProductId(Long productId) {
+        return licenseRepository.existsByProductId(productId);
+    }
+
+    public License findById(Long id) {
+        return licenseRepository.findById(id).orElse(null);
+    }
+
+    public void deleteById(Long id) {
+        licenseRepository.deleteById(id);
+    }
+
+
     @Override
     public List<License> getAll() {
         return licenseRepository.findAll();
