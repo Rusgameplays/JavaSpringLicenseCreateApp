@@ -54,6 +54,7 @@ public class AuthController {
         }
     }
 
+    //TODO: админа кто угодно может создать?
     @PostMapping("/regAd")
     public ResponseEntity<?> registerAd(@RequestBody RegRequest request) {
         try {

@@ -34,7 +34,7 @@ public class ActivationController {
     private final UserRepository userRepository;
     private final DeviceLicenseService deviceLicenseService;
 
-
+    //TODO: много логики в контроллере. Лучше вынести в сервисы, чтобы было почище
     @PostMapping("/activate")
     public ResponseEntity<?> activateLicense(@RequestBody LicenseActivationRequest request) {
         try {
@@ -60,17 +60,20 @@ public class ActivationController {
 
             deviceLicenseService.addDeviceToLicense(license, device);
 
+            //TODO: проверка дублируется, можно оптимизировать
             if (license.getUser() == null) {
                 license.setUser(user);
             }
             Integer defaultDuration = license.getLicenseType().getDefaultDuration();
 
             LocalDateTime currentDateTime = LocalDateTime.now();
+            //TODO: Можно сразу инициализировать newExpirationDate без отдельной переменной currentExpirationDate
             LocalDate currentExpirationDate = currentDateTime.toLocalDate();
-
             LocalDate newExpirationDate = currentExpirationDate.plusMonths(defaultDuration);
+
             Date newExpiration = Date.from(newExpirationDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
 
+            //TODO: не понятно, для чего вторая часть условия
             if (license.getExpirationDate() == null || newExpiration.after(license.getExpirationDate())) {
                 license.setExpirationDate(newExpiration);
             }

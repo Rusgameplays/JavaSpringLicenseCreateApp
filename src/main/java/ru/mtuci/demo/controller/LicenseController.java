@@ -63,6 +63,7 @@ public class LicenseController {
         }
     }
 
+    //TODO: не совсем понял назначение метода. Нужно обсуждать
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @PostMapping("/renew")
     public ResponseEntity<?> renewLicense(@RequestBody UpdateLicenseRequest updateLicenseRequest) {
@@ -82,13 +83,14 @@ public class LicenseController {
 
             DeviceLicense deviceLicense = deviceLicenseRepository.findByDeviceId(device.getId());
 
+            //TODO: на устройстве же может быть несколько лицензий активных одновременно
             License oldLicense = deviceLicense.getLicense();
 
             User licenseOwner = oldLicense.getUser();
             if (!isAdmin && !licenseOwner.getEmail().equals(authenticatedUser.getEmail())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Вы не можете продлевать чужую лицензию");
             }
-
+            //TODO: не понятно, в чем разница между old и new License. Меняем же свойство для одной и той же лицензии
             License newLicense = licenseService.getByKey(updateLicenseRequest.getLicenseKey());
             if (newLicense == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия не найдена по указанному ключу");

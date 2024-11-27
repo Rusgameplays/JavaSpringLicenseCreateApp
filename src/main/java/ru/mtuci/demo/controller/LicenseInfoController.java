@@ -31,7 +31,7 @@ public class LicenseInfoController {
     private final LicenseService licenseService;
     private final DeviceLicenseRepository deviceLicenseRepository;
 
-
+    //TODO: Пользователь получит валидный тикет, если лицензия истекла?
     @GetMapping("/info")
     public ResponseEntity<?> getLicenseInfo(
             @RequestParam String mac) {
@@ -40,7 +40,7 @@ public class LicenseInfoController {
             if (device == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Устройство не найдено");
             }
-
+            //TODO: для одного устройства может быть больше одной лицензии
             DeviceLicense deviceLicense = deviceLicenseRepository.findByDeviceId(device.getId());
             if (deviceLicense == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия для устройства не найдена");

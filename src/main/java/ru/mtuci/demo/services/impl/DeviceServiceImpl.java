@@ -21,9 +21,10 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     public Device registerOrUpdateDevice(DeviceRequest deviceRequest) {
+        //TODO: при вызове этого метода уже есть юзер, которого можно использовать, лишний запрос получается
         User user = userRepository.findById(deviceRequest.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-
+        //TODO: Не понятно, почему сервер генерирует маки
         String macAddress = getLocalMacAddress();
 
         Device device = new Device();

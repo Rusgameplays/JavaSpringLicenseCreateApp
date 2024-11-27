@@ -38,6 +38,7 @@ public class BlockController {
             product.setBlocked(request.isBlock());
             productService.update(product);
 
+            //TODO: радикальное решение. Можно и так оставить
             List<License> licenses = licenseService.getByProduct(product);
             for (License license : licenses) {
                 if (license.getFlagForBlocked() == true) {
@@ -57,7 +58,6 @@ public class BlockController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + ex.getMessage());
         }
     }
-
 
     @PostMapping("/user")
     public ResponseEntity<?> blockOrUnblockUser(@RequestBody BlockRequest request) {
