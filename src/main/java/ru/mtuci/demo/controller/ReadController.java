@@ -86,6 +86,7 @@ public class ReadController {
         }
     }
 
+    //TODO: Не хотелось бы показывать все устройства всем юзерам
     @GetMapping("/devices")
     public ResponseEntity<List<Device>> getAllDevices() {
         try {

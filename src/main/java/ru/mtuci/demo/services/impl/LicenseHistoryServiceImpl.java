@@ -10,6 +10,7 @@ import ru.mtuci.demo.services.LicenseHistoryService;
 
 import java.util.Date;
 
+//TODO: хотелось бы ещё и получать все события в хронологическом порядке
 @Service
 public class LicenseHistoryServiceImpl implements LicenseHistoryService {
 

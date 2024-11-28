@@ -113,6 +113,7 @@ public class LicenseServiceImpl implements LicenseService {
         } while (licenseRepository.existsByKey(activationCode));
         license.setKey(activationCode);
 
+        //TODO: наверно ещё рановато дату окончания считать
         license.setExpirationDate(calculateEndDate(licenseType));
 
         licenseRepository.save(license);
@@ -125,8 +126,10 @@ public class LicenseServiceImpl implements LicenseService {
 
     @Override
     public void updateLicense(License license, User user) {
+        //TODO: владелец при активации меняться не должен
         license.setOwner(user);
         license.setBlocked(false);
+        //TODO: а если лицензия активируется не в первый раз?
         license.setActivationDate(new Date());
         license.setBlocked(false);
 
@@ -156,6 +159,7 @@ public class LicenseServiceImpl implements LicenseService {
         ticket.setLicenseBlocked(license.getBlocked() != null ? license.getBlocked().toString() : "null");
 
         String serializedTicket = TicketSigner.serializeTicket(ticket);
+        //TODO: хорошо бы сделать так, чтобы тикет сам её генерировал при создании объекта
         String digitalSignature = Ticket.DigitalSignatureUtil.generateSignature(serializedTicket);
         ticket.setDigitalSignature(digitalSignature);
 
