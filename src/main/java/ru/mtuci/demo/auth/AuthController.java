@@ -54,15 +54,4 @@ public class AuthController {
         }
     }
 
-    //TODO: админа кто угодно может создать?
-    @PostMapping("/regAd")
-    public ResponseEntity<?> registerAd(@RequestBody RegRequest request) {
-        try {
-            userService.createAdmin(request.getEmail(), request.getName(), request.getPassword());
-            return ResponseEntity.ok("Successful");
-        } catch (UserAlreadyCreate ex) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ex.getMessage());
-        }
-    }
 }

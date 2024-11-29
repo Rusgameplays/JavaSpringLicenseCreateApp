@@ -7,6 +7,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class UpdateLicenseRequest {
     private String licenseKey;
-    private String deviceMac;
-
+    private String oldLicenseKey;
 }

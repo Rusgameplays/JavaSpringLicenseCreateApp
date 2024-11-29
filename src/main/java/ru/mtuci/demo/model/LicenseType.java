@@ -1,6 +1,7 @@
 package ru.mtuci.demo.model;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
@@ -33,6 +34,7 @@ public class LicenseType {
     private Integer maxDevices;
     private String description;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "licenseType", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("licenseType")
     private List<License> license;

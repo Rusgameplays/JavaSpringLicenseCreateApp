@@ -10,6 +10,9 @@ import ru.mtuci.demo.repo.DeviceRepository;
 import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.DeviceService;
 
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.Random;
 
 @RequiredArgsConstructor
@@ -17,14 +20,9 @@ import java.util.Random;
 public class DeviceServiceImpl implements DeviceService {
 
     private final DeviceRepository deviceRepository;
-    private final UserRepository userRepository;
 
     @Override
-    public Device registerOrUpdateDevice(DeviceRequest deviceRequest) {
-        //TODO: при вызове этого метода уже есть юзер, которого можно использовать, лишний запрос получается
-        User user = userRepository.findById(deviceRequest.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
-        //TODO: Не понятно, почему сервер генерирует маки
+    public Device registerOrUpdateDevice(DeviceRequest deviceRequest, User user) {
         String macAddress = getLocalMacAddress();
 
         Device device = new Device();
@@ -36,6 +34,29 @@ public class DeviceServiceImpl implements DeviceService {
         return deviceRepository.save(device);
     }
 
+    /*public static String getLocalMacAddress() {
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = networkInterfaces.nextElement();
+
+                if (networkInterface.isUp() && !networkInterface.isVirtual()) {
+                    byte[] macAddress = networkInterface.getHardwareAddress();
+                    if (macAddress != null) {
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < macAddress.length; i++) {
+                            sb.append(String.format("%02X", macAddress[i]));
+                            if (i < macAddress.length - 1) sb.append(":");
+                        }
+                        return sb.toString();
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }*/
 
     private String getLocalMacAddress() {
         String macAddress;
@@ -63,12 +84,12 @@ public class DeviceServiceImpl implements DeviceService {
         return macAddress.toString();
     }
 
-    public Device findDeviceByInfo(String name, String mac) {
-        return deviceRepository.findByNameAndMac(name, mac).orElse(null);
-    }
-
     public Device getByMac(String mac) {
         return deviceRepository.findByMac(mac)
                 .orElseThrow(() -> new EntityNotFoundException("Устройство с MAC-адресом " + mac + " не найдено"));
+    }
+    public Device getByNameForUser(String name, Long userId) {
+        return deviceRepository.findByNameAndUserId(name, userId)
+                .orElse(null);  // Возвращаем null, если устройство не найдено
     }
 }

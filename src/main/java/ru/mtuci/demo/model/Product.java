@@ -2,6 +2,7 @@ package ru.mtuci.demo.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
@@ -22,7 +23,7 @@ import lombok.Setter;
 @Setter
 @Table(name = "products")
 @Entity
-public final class Product {
+public class Product {
     @Id
     @GeneratedValue
     private Long id;
@@ -32,6 +33,7 @@ public final class Product {
 
     private Boolean blocked;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("product")
     private List<License> license;

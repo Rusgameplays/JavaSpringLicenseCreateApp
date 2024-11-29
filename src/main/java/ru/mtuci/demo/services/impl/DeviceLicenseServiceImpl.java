@@ -13,13 +13,4 @@ import java.util.Date;
 @RequiredArgsConstructor
 @Service
 public class DeviceLicenseServiceImpl implements DeviceLicenseService {
-    private final DeviceLicenseRepository deviceLicenseRepository;
-
-    public DeviceLicense addDeviceToLicense(License license, Device device) {
-        DeviceLicense deviceLicense = new DeviceLicense();
-        deviceLicense.setLicense(license);
-        deviceLicense.setDevice(device);
-        deviceLicense.setActivationDate(new Date());
-        return deviceLicenseRepository.save(deviceLicense);
-    }
 }

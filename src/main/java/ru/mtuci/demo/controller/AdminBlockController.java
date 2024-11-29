@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ru.mtuci.demo.auth.RegRequest;
 import ru.mtuci.demo.controller.requests.BlockRequest;
+import ru.mtuci.demo.exception.UserAlreadyCreate;
 import ru.mtuci.demo.model.License;
 import ru.mtuci.demo.model.Product;
 import ru.mtuci.demo.model.User;
@@ -18,16 +20,27 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/block")
+@RequestMapping("/admin")
 @PreAuthorize("hasRole('ADMIN')")
-public class BlockController {
+public class AdminBlockController {
 
     private final ProductService productService;
     private final UserService userService;
     private final LicenseService licenseService;
     private final LicenseHistoryService licenseHistoryService;
 
-    @PostMapping("/product")
+    @PostMapping("/reg")
+    public ResponseEntity<?> registerAd(@RequestBody RegRequest request) {
+        try {
+            userService.createAdmin(request.getEmail(), request.getName(), request.getPassword());
+            return ResponseEntity.ok("Successful");
+        } catch (UserAlreadyCreate ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ex.getMessage());
+        }
+    }
+
+    @PostMapping("/block/product")
     public ResponseEntity<?> blockOrUnblockProduct(@RequestBody BlockRequest request) {
         try {
             Product product = productService.getById(request.getId());
@@ -38,7 +51,6 @@ public class BlockController {
             product.setBlocked(request.isBlock());
             productService.update(product);
 
-            //TODO: радикальное решение. Можно и так оставить
             List<License> licenses = licenseService.getByProduct(product);
             for (License license : licenses) {
                 if (license.getFlagForBlocked() == true) {
@@ -59,7 +71,7 @@ public class BlockController {
         }
     }
 
-    @PostMapping("/user")
+    @PostMapping("/block/user")
     public ResponseEntity<?> blockOrUnblockUser(@RequestBody BlockRequest request) {
         try {
             User user = userService.getById(request.getId());

@@ -5,12 +5,21 @@ import java.util.Date;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.*;
 import ru.mtuci.demo.model.Device;
 import ru.mtuci.demo.model.License;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Base64;
+import java.util.Date;
+import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -31,25 +40,18 @@ public class Ticket {
     @JsonIgnore
     private Device device;
 
-    public class DigitalSignatureUtil {
-
-        private static final String HMAC_SHA256 = "HmacSHA256";
-
-
-        private final static String SECRET_KEY = "key"; //Скрою позже - ОК
-
-        public static String generateSignature(String data) {
-            try {
-                SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), HMAC_SHA256);
-                Mac mac = Mac.getInstance(HMAC_SHA256);
-                mac.init(secretKey);
-
-                byte[] rawHmac = mac.doFinal(data.getBytes());
-                return Base64.getEncoder().encodeToString(rawHmac);
-            } catch (Exception e) {
-                throw new RuntimeException("Ошибка при создании цифровой подписи", e);
-            }
-        }
+    public Ticket(License license, Device device) {
+        this.serverDate = new Date();
+        this.ticketLifetime = license.getLicenseType().getDefaultDuration() != null
+                ? license.getLicenseType().getDefaultDuration().longValue() * 30 * 24 * 60 * 60 * 1000
+                : 0L;
+        this.activationDate = license.getActivationDate();
+        this.expirationDate = license.getExpirationDate();
+        this.userId = device.getUser() != null ? device.getUser().getId() : null;
+        this.deviceId = device.getMac();
+        this.licenseBlocked = license.getBlocked() != null ? license.getBlocked().toString() : "null";
+        this.digitalSignature=TicketS.getInstance().generateDigitalSignature();
     }
-
 }
+
+

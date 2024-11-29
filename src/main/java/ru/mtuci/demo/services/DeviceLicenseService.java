@@ -5,5 +5,4 @@ import ru.mtuci.demo.model.DeviceLicense;
 import ru.mtuci.demo.model.License;
 
 public interface DeviceLicenseService {
-    DeviceLicense addDeviceToLicense(License license, Device device);
 }

@@ -86,7 +86,7 @@ public class ReadController {
         }
     }
 
-    //TODO: Не хотелось бы показывать все устройства всем юзерам
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/devices")
     public ResponseEntity<List<Device>> getAllDevices() {
         try {
@@ -101,6 +101,7 @@ public class ReadController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/device/{id}")
     public ResponseEntity<Device> getDeviceById(@PathVariable Long id) {
         try {
@@ -114,6 +115,7 @@ public class ReadController {
                     .body(null);
         }
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/license/{id}")
     public ResponseEntity<String> getLicenseById(@PathVariable Long id) {

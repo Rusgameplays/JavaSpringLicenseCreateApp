@@ -10,17 +10,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import ru.mtuci.demo.model.Device;
-import ru.mtuci.demo.model.DeviceLicense;
-import ru.mtuci.demo.model.License;
-import ru.mtuci.demo.model.User;
+import ru.mtuci.demo.controller.requests.LicenseHistoryResponse;
+import ru.mtuci.demo.model.*;
 import ru.mtuci.demo.repo.DeviceLicenseRepository;
 import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.DeviceService;
+import ru.mtuci.demo.services.LicenseHistoryService;
 import ru.mtuci.demo.services.LicenseService;
 import ru.mtuci.demo.ticket.Ticket;
 
-import java.util.List;
+import java.util.*;
 
 @RequiredArgsConstructor
 @RestController
@@ -30,30 +29,41 @@ public class LicenseInfoController {
     private final DeviceService deviceService;
     private final LicenseService licenseService;
     private final DeviceLicenseRepository deviceLicenseRepository;
+    private final LicenseHistoryService licenseHistoryService;
 
-    //TODO: Пользователь получит валидный тикет, если лицензия истекла?
     @GetMapping("/info")
-    public ResponseEntity<?> getLicenseInfo(
-            @RequestParam String mac) {
+    public ResponseEntity<?> getLicenseInfo(@RequestParam String mac) {
         try {
             Device device = deviceService.getByMac(mac);
             if (device == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Устройство не найдено");
             }
-            //TODO: для одного устройства может быть больше одной лицензии
-            DeviceLicense deviceLicense = deviceLicenseRepository.findByDeviceId(device.getId());
-            if (deviceLicense == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия для устройства не найдена");
+
+            List<DeviceLicense> deviceLicenses = deviceLicenseRepository.findByDeviceId(device.getId());
+            if (deviceLicenses.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензии для устройства не найдены");
             }
 
-            License license = deviceLicense.getLicense();
-            if (license == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия не найдена");
+            List<Ticket> tickets = new ArrayList<>();
+            for (DeviceLicense deviceLicense : deviceLicenses) {
+                License license = deviceLicense.getLicense();
+                if (license == null) {
+                    continue;
+                }
+
+                if (license.getExpirationDate() != null && license.getExpirationDate().before(new Date())) {
+                    continue;
+                }
+
+                Ticket ticket = new Ticket(license,device);
+                tickets.add(ticket);
             }
 
-            Ticket ticket = licenseService.generateTicket(license, device);
+            if (tickets.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Все лицензии истекли");
+            }
 
-            return ResponseEntity.ok(ticket);
+            return ResponseEntity.ok(tickets);
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
@@ -61,4 +71,16 @@ public class LicenseInfoController {
     }
 
 
+    @GetMapping("/history")
+    public ResponseEntity<?> getAllLicenseHistory() {
+        try {
+            List<LicenseHistoryResponse> historyList = licenseHistoryService.getAllLicenseHistory();
+            if (historyList.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("История лицензий не найдена");
+            }
+            return ResponseEntity.ok(historyList);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
+        }
+    }
 }

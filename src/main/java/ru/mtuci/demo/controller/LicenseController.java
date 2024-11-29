@@ -68,92 +68,23 @@ public class LicenseController {
     @PostMapping("/renew")
     public ResponseEntity<?> renewLicense(@RequestBody UpdateLicenseRequest updateLicenseRequest) {
         try {
-
             User authenticatedUser = getAuthenticatedUser();
             if (authenticatedUser == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не авторизован");
             }
 
-            boolean isAdmin = authenticatedUser.getRole() == ApplicationRole.ADMIN;
-
-            Device device = deviceService.getByMac(updateLicenseRequest.getDeviceMac());
-            if (device == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Устройство не найдено по указанному MAC адресу");
-            }
-
-            DeviceLicense deviceLicense = deviceLicenseRepository.findByDeviceId(device.getId());
-
-            //TODO: на устройстве же может быть несколько лицензий активных одновременно
-            License oldLicense = deviceLicense.getLicense();
-
-            User licenseOwner = oldLicense.getUser();
-            if (!isAdmin && !licenseOwner.getEmail().equals(authenticatedUser.getEmail())) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Вы не можете продлевать чужую лицензию");
-            }
-            //TODO: не понятно, в чем разница между old и new License. Меняем же свойство для одной и той же лицензии
-            License newLicense = licenseService.getByKey(updateLicenseRequest.getLicenseKey());
-            if (newLicense == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Лицензия не найдена по указанному ключу");
-            }
-
-            if (newLicense.getActivationDate() != null) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Лицензия уже активирована");
-            }
-
-            Integer oldMaxDevices = oldLicense.getLicenseType().getMaxDevices();
-            Integer newMaxDevices = newLicense.getLicenseType().getMaxDevices();
-            if (oldMaxDevices > newMaxDevices) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Новая лицензия не поддерживает текущее количество устройств. " +
-                                "Максимум для старой лицензии: " + oldMaxDevices +
-                                ", максимум для новой лицензии: " + newMaxDevices);
-            }
-
-            long activeDeviceCount = licenseService.countActiveDevicesForLicense(newLicense);
-            if (activeDeviceCount >= newMaxDevices) {
-                return ResponseEntity.badRequest().body("Превышено максимальное количество устройств для новой лицензии");
-            }
-
-            Integer defaultDuration = newLicense.getLicenseType().getDefaultDuration();
-            LocalDate currentExpirationDate = LocalDate.now();
-            LocalDate newExpirationDate = currentExpirationDate.plusMonths(defaultDuration);
-            Date newExpiration = Date.from(newExpirationDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-
-            if (newExpiration.after(oldLicense.getExpirationDate())) {
-                oldLicense.setExpirationDate(newExpiration);
-            }
-
-            oldLicense.setBlocked(true);
-            oldLicense.setFlagForBlocked(true);
-            licenseService.update(oldLicense);
-
-            List<DeviceLicense> deviceLicenses = deviceLicenseRepository.findByLicenseId(oldLicense.getId());
-            for (DeviceLicense dl : deviceLicenses) {
-                dl.setLicense(newLicense);
-                deviceLicenseRepository.save(dl);
-            }
-
-            newLicense.setUser(licenseOwner);
-            newLicense.setBlocked(false);
-            newLicense.setActivationDate(new Date());
-            newLicense.setExpirationDate(newExpiration);
-            licenseService.add(newLicense);
-
-            licenseHistoryService.recordLicenseChange(
-                    newLicense,
-                    licenseOwner,
-                    "Renewed",
-                    "Лицензия была успешно продлена. Новая дата окончания: " + newExpiration
-            );
-
-            Ticket ticket = licenseService.generateTicket(newLicense, device);
+            Ticket ticket = licenseService.renewLicense(updateLicenseRequest, authenticatedUser);
 
             return ResponseEntity.ok(ticket);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + ex.getMessage());
         }
     }
+
+
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

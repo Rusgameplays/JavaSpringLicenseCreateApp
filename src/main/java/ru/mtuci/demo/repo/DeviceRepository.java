@@ -9,7 +9,7 @@ import java.util.Optional;
 
 
 public interface DeviceRepository extends JpaRepository<Device, Long> {
-
+    Optional<Device> findByNameAndUserId(String name, Long userId);
     Optional<Device> findByMac(String mac);
     boolean existsByMac(String mac);
     Optional<Device> findByNameAndMac(String name, String mac);

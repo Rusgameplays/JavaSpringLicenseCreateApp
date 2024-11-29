@@ -5,8 +5,8 @@ import ru.mtuci.demo.model.Device;
 import ru.mtuci.demo.model.User;
 
 public interface DeviceService {
-    Device registerOrUpdateDevice(DeviceRequest deviceRequest);
-    Device findDeviceByInfo(String name, String mac);
+    Device registerOrUpdateDevice(DeviceRequest deviceRequest, User user);
     Device getByMac(String mac);
+    Device getByNameForUser(String name, Long userId);
 }
 
