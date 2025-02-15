@@ -30,7 +30,7 @@ public class ActivationController {
 
     private final LicenseService licenseService;
     private final UserRepository userRepository;
-
+    //TODO: много логики в контроллере. Лучше вынести в сервисы, чтобы было почище - Исправил
     @PostMapping("/activate")
     public ResponseEntity<?> activateLicense(@RequestBody LicenseActivationRequest request) {
         try {

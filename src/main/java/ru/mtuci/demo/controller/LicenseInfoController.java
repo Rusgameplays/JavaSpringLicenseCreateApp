@@ -31,6 +31,7 @@ public class LicenseInfoController {
     private final DeviceLicenseRepository deviceLicenseRepository;
     private final LicenseHistoryService licenseHistoryService;
 
+    //TODO: Пользователь получит валидный тикет, если лицензия истекла? - Добавлена проверка
     @GetMapping("/info")
     public ResponseEntity<?> getLicenseInfo(@RequestParam String mac) {
         try {
@@ -70,7 +71,7 @@ public class LicenseInfoController {
         }
     }
 
-
+    //TODO: хотелось бы ещё и получать все события в хронологическом порядке - Исправил - выводит по возрастанию
     @GetMapping("/history")
     public ResponseEntity<?> getAllLicenseHistory() {
         try {

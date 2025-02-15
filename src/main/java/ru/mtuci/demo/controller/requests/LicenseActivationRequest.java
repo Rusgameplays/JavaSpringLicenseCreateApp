@@ -7,5 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class LicenseActivationRequest {
     private String key;
-    private DeviceRequest deviceRequest;
+    private String name;
+    private String mac;
+    private Long userId;
 }

@@ -30,7 +30,6 @@ public class Device {
 
     private String name;
 
-    @Column(unique = true)
     private String mac;
 
     @ManyToOne

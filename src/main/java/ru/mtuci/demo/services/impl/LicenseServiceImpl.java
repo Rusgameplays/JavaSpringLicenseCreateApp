@@ -63,7 +63,7 @@ public class LicenseServiceImpl implements LicenseService {
     }
 
     public Ticket activateLicense(LicenseActivationRequest request, User authenticatedUser) {
-        User user = userRepository.findById(request.getDeviceRequest().getUserId())
+        User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
         License license = getByKey(request.getKey());
@@ -74,7 +74,7 @@ public class LicenseServiceImpl implements LicenseService {
         if (license.getUser() != null && !license.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("Невозможно активировать лицензию на другого пользователя");
         } else {
-            license.setUser(user);
+            license.setUser(user); //TODO: проверка дублируется, можно оптимизировать - Исправил
         }
 
         long activeDeviceCount = countActiveDevicesForLicense(license);
@@ -82,14 +82,14 @@ public class LicenseServiceImpl implements LicenseService {
             throw new IllegalArgumentException("Превышено максимальное количество устройств для данной лицензии");
         }
 
-        Device existingDevice = deviceService.getByNameForUser(request.getDeviceRequest().getName(), user.getId());
+        Device existingDevice = deviceService.getByNameForUser(request.getName(), user.getId());
         Device device;
 
         if (existingDevice != null) {
 
             device = existingDevice;
         } else {
-            device = deviceService.registerOrUpdateDevice(request.getDeviceRequest(), user);
+            device = deviceService.registerOrUpdateDevice(request, user);
         }
 
         boolean isAlreadyLinked = deviceLicenseRepository
@@ -105,6 +105,7 @@ public class LicenseServiceImpl implements LicenseService {
         deviceLicense.setActivationDate(new Date());
         deviceLicenseRepository.save(deviceLicense);
 
+        //TODO: Можно сразу инициализировать newExpirationDate без отдельной переменной currentExpirationDate - Исправил
         Integer defaultDuration = license.getLicenseType().getDefaultDuration();
         Date newExpiration = Date.from(
                 LocalDate.now()
@@ -112,6 +113,7 @@ public class LicenseServiceImpl implements LicenseService {
                         .atStartOfDay(ZoneId.systemDefault())
                         .toInstant()
         );
+        //TODO: не понятно, для чего вторая часть условия - Была другая мысль на активацию, переосмыслил - исправил
 
         if (license.getExpirationDate() == null) {
             license.setExpirationDate(newExpiration);
@@ -163,7 +165,7 @@ public class LicenseServiceImpl implements LicenseService {
 
     @Override
     public void updateLicense(License license, User user) {
-        license.setBlocked(false);
+
 
         if (license.getActivationDate() == null) {
             license.setActivationDate(new Date());
@@ -176,7 +178,7 @@ public class LicenseServiceImpl implements LicenseService {
     public List<License> getActiveLicensesForUser(User user) {
         return licenseRepository.findByUserAndActivationDateNotNullAndExpirationDateAfter(user, new Date());
     }
-
+    //Исправил, теперь продление (и улучшение) лицензии идет не по MAC, а по ключу старой лицензии
     public Ticket renewLicense(UpdateLicenseRequest updateLicenseRequest, User authenticatedUser) {
         boolean isAdmin = authenticatedUser.getRole() == ApplicationRole.ADMIN;
 
@@ -255,6 +257,7 @@ public class LicenseServiceImpl implements LicenseService {
                 "Renewed",
                 "Лицензия была успешно продлена. Новая дата окончания: " + newExpiration
         );
+        //TODO: хорошо бы сделать так, чтобы тикет сам её генерировал при создании объекта - Готово
         Ticket ticket = new Ticket(newLicense,deviceLicenses.get(0).getDevice());
         return ticket;
     }

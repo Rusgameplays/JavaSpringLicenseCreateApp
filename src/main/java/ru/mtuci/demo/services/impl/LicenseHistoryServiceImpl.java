@@ -34,7 +34,7 @@ public class LicenseHistoryServiceImpl implements LicenseHistoryService {
 
     @Override
     public List<LicenseHistoryResponse> getAllLicenseHistory() {
-        List<LicenseHistory> historyList = licenseHistoryRepository.findAllByOrderByChangeDateAsc();
+        List<LicenseHistory> historyList = licenseHistoryRepository.findAllByOrderByChangeDateAsc(); //по возрастанию
         List<LicenseHistoryResponse> historyResponseList = new ArrayList<>();
 
         for (LicenseHistory history : historyList) {

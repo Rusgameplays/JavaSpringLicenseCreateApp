@@ -3,16 +3,12 @@ package ru.mtuci.demo.services.impl;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.mtuci.demo.controller.requests.DeviceRequest;
+import ru.mtuci.demo.controller.requests.LicenseActivationRequest;
 import ru.mtuci.demo.model.Device;
 import ru.mtuci.demo.model.User;
 import ru.mtuci.demo.repo.DeviceRepository;
-import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.DeviceService;
 
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.Enumeration;
 import java.util.Random;
 
 @RequiredArgsConstructor
@@ -22,18 +18,20 @@ public class DeviceServiceImpl implements DeviceService {
     private final DeviceRepository deviceRepository;
 
     @Override
-    public Device registerOrUpdateDevice(DeviceRequest deviceRequest, User user) {
-        String macAddress = getLocalMacAddress();
+    public Device registerOrUpdateDevice(LicenseActivationRequest deviceRequest, User user) {
+        //String macAddress = getLocalMacAddress();
 
         Device device = new Device();
 
-        device.setMac(macAddress);
+        device.setMac(deviceRequest.getMac());
         device.setName(deviceRequest.getName());
         device.setUser(user);
 
         return deviceRepository.save(device);
     }
 
+    //TODO: Не понятно, почему сервер генерирует маки - для отладки. Без отладки не могу проверить как работает программа
+    // с другими устройствами
     /*public static String getLocalMacAddress() {
         try {
             Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
@@ -90,6 +88,6 @@ public class DeviceServiceImpl implements DeviceService {
     }
     public Device getByNameForUser(String name, Long userId) {
         return deviceRepository.findByNameAndUserId(name, userId)
-                .orElse(null);  // Возвращаем null, если устройство не найдено
+                .orElse(null);
     }
 }
