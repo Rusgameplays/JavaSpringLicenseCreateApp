@@ -8,10 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import lombok.RequiredArgsConstructor;
@@ -43,6 +40,11 @@ public class AuthController {
         }
     }
 
+    @GetMapping("/test")
+    public ResponseEntity<?> test() {
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/reg")
     public ResponseEntity<?> register(@RequestBody RegRequest request) {
         try {
@@ -53,7 +55,5 @@ public class AuthController {
                     .body(ex.getMessage());
         }
     }
-
-    //TODO: админа кто угодно может создать? - Перенес в другой контроллер
 
 }
