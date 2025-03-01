@@ -4,9 +4,10 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,16 +30,22 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            return ResponseEntity.ok(new LoginResponse(request.getEmail(), jwtProvider.createToken(request.getEmail(),
-                    authenticationManager
-                            .authenticate(
-                                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()))
-                            .getAuthorities().stream().collect(Collectors.toSet()))));
-        } catch (AuthenticationException ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Incorrect password");
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+            String accessToken = jwtProvider.createAccessToken(request.getEmail(),
+                    authentication.getAuthorities().stream().collect(Collectors.toSet()));
+
+            String refreshToken = jwtProvider.createRefreshToken(request.getEmail(), request.getDeviceId());
+
+            return ResponseEntity.ok(new LoginResponse(request.getEmail(), accessToken, refreshToken));
+        } catch (BadCredentialsException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect email or password");
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Authentication failed");
         }
     }
+
 
     @GetMapping("/test")
     public ResponseEntity<?> test() {
