@@ -1,5 +1,6 @@
 package ru.mtuci.demo.auth;
 
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -34,9 +36,9 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
             String accessToken = jwtProvider.createAccessToken(request.getEmail(),
-                    authentication.getAuthorities().stream().collect(Collectors.toSet()));
+                    new HashSet<>(authentication.getAuthorities()));
 
-            String refreshToken = jwtProvider.createRefreshToken(request.getEmail(), request.getDeviceId());
+            String refreshToken = jwtProvider.createRefreshToken(request.getEmail(), request.getDeviceId(),new HashSet<>(authentication.getAuthorities()));
 
             return ResponseEntity.ok(new LoginResponse(request.getEmail(), accessToken, refreshToken));
         } catch (BadCredentialsException ex) {
@@ -62,5 +64,17 @@ public class AuthController {
                     .body(ex.getMessage());
         }
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
+        try {
+            String newAccessToken = jwtProvider.refreshAccessToken(request.getRefreshToken());
+            return ResponseEntity.ok(newAccessToken);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
+        }
+    }
+
 
 }

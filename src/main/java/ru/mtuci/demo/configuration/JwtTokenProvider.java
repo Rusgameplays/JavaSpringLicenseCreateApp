@@ -39,15 +39,19 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(String username, String deviceId) {
+    public String createRefreshToken(String username, String deviceId, Set<GrantedAuthority> authorities) {
         return Jwts.builder()
                 .subject(username)
+                .claim("auth", authorities.stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList())) // Добавляем роли и права
                 .claim("token_type", "refresh")
                 .claim("device_id", deviceId)
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration * 2)) // refresh token может жить дольше
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration * 2)) // Живет дольше access-токена
                 .signWith(getSigningKey())
                 .compact();
     }
+
 
     public boolean validateToken(String token) {
         try {
@@ -86,4 +90,19 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload().get("token_type", String.class);
     }
+
+    public String refreshAccessToken(String refreshToken) {
+        System.out.println("Token type: " + getTokenType(refreshToken));
+        System.out.println(validateToken(refreshToken));
+        if (!validateToken(refreshToken) || !"refresh".equals(getTokenType(refreshToken))) {
+            throw new IllegalArgumentException("Invalid or expired refresh token");
+        }
+        String username = getUsername(refreshToken);
+        Set<GrantedAuthority> authorities = getAuthorities(refreshToken);
+
+
+
+        return createAccessToken(username, authorities);
+    }
+
 }
