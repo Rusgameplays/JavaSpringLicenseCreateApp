@@ -14,6 +14,7 @@ import ru.mtuci.demo.model.UserSession;
 import ru.mtuci.demo.repo.UserSessionRepository;
 import ru.mtuci.demo.services.TokenService;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
@@ -30,12 +31,10 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public LoginResponse issueTokenPair(String version, Authentication authentication, LoginRequest request) {
         List<UserSession> existingSessions = userSessionRepository.findByEmail(request.getEmail());
-        boolean hasActiveSession = existingSessions.stream()
-                .anyMatch(session -> session.getStatus() == SessionStatus.ACTIVE);
-
-        if (hasActiveSession) {
-            throw new IllegalStateException("User already has an active session.");
-        }
+        existingSessions.forEach(session -> {
+            session.setStatus(SessionStatus.REVOKED);
+        });
+        userSessionRepository.saveAll(existingSessions);
         String accessToken = jwtTokenProvider.createAccessToken(request.getEmail(),
                 new HashSet<>(authentication.getAuthorities()));
 
