@@ -3,6 +3,7 @@ package ru.mtuci.demo.auth;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,10 +17,13 @@ import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import ru.mtuci.demo.configuration.JwtTokenProvider;
+import ru.mtuci.demo.model.UserSession;
+import ru.mtuci.demo.service.impl.TokenServiceImpl;
+import ru.mtuci.demo.services.TokenService;
 import ru.mtuci.demo.services.UserService;
 import ru.mtuci.demo.exception.UserAlreadyCreate;
 
-
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 @RestController
@@ -28,6 +32,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtProvider;
     private final UserService userService;
+    private final TokenService tokenService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
@@ -35,15 +40,13 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-            String accessToken = jwtProvider.createAccessToken(request.getEmail(),
-                    new HashSet<>(authentication.getAuthorities()));
+            LoginResponse lg = tokenService.issueTokenPair("1.00", authentication, request);
 
-            String refreshToken = jwtProvider.createRefreshToken(request.getEmail(), request.getDeviceId(),new HashSet<>(authentication.getAuthorities()));
-
-            return ResponseEntity.ok(new LoginResponse(request.getEmail(), accessToken, refreshToken));
+            return ResponseEntity.ok(lg);
         } catch (BadCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect email or password");
         } catch (Exception ex) {
+            log.error("Authentication failed for email: {}. Error: {}", request.getEmail(), ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Authentication failed");
         }
     }
@@ -71,7 +74,6 @@ public class AuthController {
             String newAccessToken = jwtProvider.refreshAccessToken(request.getRefreshToken());
             return ResponseEntity.ok(newAccessToken);
         } catch (Exception ex) {
-            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
         }
     }
