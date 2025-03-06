@@ -29,7 +29,13 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public LoginResponse issueTokenPair(String version, Authentication authentication, LoginRequest request) {
+        List<UserSession> existingSessions = userSessionRepository.findByEmail(request.getEmail());
+        boolean hasActiveSession = existingSessions.stream()
+                .anyMatch(session -> session.getStatus() == SessionStatus.ACTIVE);
 
+        if (hasActiveSession) {
+            throw new IllegalStateException("User already has an active session.");
+        }
         String accessToken = jwtTokenProvider.createAccessToken(request.getEmail(),
                 new HashSet<>(authentication.getAuthorities()));
 

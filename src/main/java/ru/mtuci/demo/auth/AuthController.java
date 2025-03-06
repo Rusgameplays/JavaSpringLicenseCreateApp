@@ -1,8 +1,5 @@
 package ru.mtuci.demo.auth;
 
-import java.util.HashSet;
-import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,15 +7,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 
 import lombok.RequiredArgsConstructor;
 import ru.mtuci.demo.configuration.JwtTokenProvider;
-import ru.mtuci.demo.model.UserSession;
-import ru.mtuci.demo.service.impl.TokenServiceImpl;
 import ru.mtuci.demo.services.TokenService;
 import ru.mtuci.demo.services.UserService;
 import ru.mtuci.demo.exception.UserAlreadyCreate;
