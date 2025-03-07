@@ -13,8 +13,8 @@ import ru.mtuci.demo.model.SessionStatus;
 import ru.mtuci.demo.model.UserSession;
 import ru.mtuci.demo.repo.UserSessionRepository;
 import ru.mtuci.demo.services.TokenService;
+import ru.mtuci.demo.services.impl.response.TokenResponse;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
@@ -53,6 +53,40 @@ public class TokenServiceImpl implements TokenService {
                 .build();
         userSessionRepository.save(session);
         return new LoginResponse(request.getEmail(), accessToken, refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public TokenResponse refreshTokenPair(String refreshToken) {
+        UserSession session = userSessionRepository.findByRefreshToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+        if (session.getStatus() == SessionStatus.USED || session.getRefreshTokenExpiry() < System.currentTimeMillis()) {
+            blockAllSessionsForUser(session.getEmail());
+            return null;
+        }
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(session.getEmail(),
+                new HashSet<>(jwtTokenProvider.getAuthorities(refreshToken)));
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(session.getEmail(), session.getDeviceId(),
+                new HashSet<>(jwtTokenProvider.getAuthorities(refreshToken)));
+
+        session.setStatus(SessionStatus.USED);
+        userSessionRepository.save(session);
+
+        UserSession newSession = UserSession.builder()
+                .email(session.getEmail())
+                .deviceId(session.getDeviceId())
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .accessTokenExpiry(System.currentTimeMillis() + jwtExpiration)
+                .refreshTokenExpiry(System.currentTimeMillis() + jwtExpiration * 2)
+                .status(SessionStatus.ACTIVE)
+                .version(session.getVersion())
+                .build();
+        userSessionRepository.save(newSession);
+
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
 

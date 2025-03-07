@@ -2,7 +2,6 @@ package ru.mtuci.demo.configuration;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -89,20 +88,6 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload().get("token_type", String.class);
-    }
-
-    public String refreshAccessToken(String refreshToken) {
-        System.out.println("Token type: " + getTokenType(refreshToken));
-        System.out.println(validateToken(refreshToken));
-        if (!validateToken(refreshToken) || !"refresh".equals(getTokenType(refreshToken))) {
-            throw new IllegalArgumentException("Invalid or expired refresh token");
-        }
-        String username = getUsername(refreshToken);
-        Set<GrantedAuthority> authorities = getAuthorities(refreshToken);
-
-
-
-        return createAccessToken(username, authorities);
     }
 
 }

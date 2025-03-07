@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.*;
 
 
 import lombok.RequiredArgsConstructor;
-import ru.mtuci.demo.configuration.JwtTokenProvider;
 import ru.mtuci.demo.services.TokenService;
 import ru.mtuci.demo.services.UserService;
 import ru.mtuci.demo.exception.UserAlreadyCreate;
+import ru.mtuci.demo.services.impl.response.TokenResponse;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -23,7 +23,6 @@ import ru.mtuci.demo.exception.UserAlreadyCreate;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtProvider;
     private final UserService userService;
     private final TokenService tokenService;
 
@@ -64,9 +63,11 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(@RequestBody RefreshRequest request) {
         try {
-            String newAccessToken = jwtProvider.refreshAccessToken(request.getRefreshToken());
-            return ResponseEntity.ok(newAccessToken);
+            TokenResponse tokenResponse = tokenService.refreshTokenPair(request.getRefreshToken());
+
+            return ResponseEntity.ok(tokenResponse);
         } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
         }
     }
