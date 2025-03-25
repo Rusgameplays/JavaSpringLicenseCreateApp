@@ -29,7 +29,7 @@ public class TokenServiceImpl implements TokenService {
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
-    public LoginResponse issueTokenPair(String version, Authentication authentication, LoginRequest request) {
+    public LoginResponse issueTokenPair(Authentication authentication, LoginRequest request) {
 
         String accessToken = jwtTokenProvider.createAccessToken(request.getEmail(),
                 new HashSet<>(authentication.getAuthorities()));

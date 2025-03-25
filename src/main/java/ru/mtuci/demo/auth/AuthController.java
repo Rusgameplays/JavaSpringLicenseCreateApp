@@ -32,7 +32,7 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-            LoginResponse lg = tokenService.issueTokenPair("1.00", authentication, request);
+            LoginResponse lg = tokenService.issueTokenPair(authentication, request);
 
             return ResponseEntity.ok(lg);
         } catch (BadCredentialsException ex) {

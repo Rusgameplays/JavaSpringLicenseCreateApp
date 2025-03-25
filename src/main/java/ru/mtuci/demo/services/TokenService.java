@@ -8,7 +8,7 @@ import ru.mtuci.demo.services.impl.response.TokenResponse;
 
 public interface TokenService {
 
-    LoginResponse issueTokenPair(String version, Authentication authentication, LoginRequest request);
+    LoginResponse issueTokenPair(Authentication authentication, LoginRequest request);
     TokenResponse refreshTokenPair(String refreshToken);
     void blockAllSessionsForUser(String email);
 }
