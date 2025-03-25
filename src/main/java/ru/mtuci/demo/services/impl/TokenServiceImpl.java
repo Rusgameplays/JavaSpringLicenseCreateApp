@@ -3,6 +3,7 @@ package ru.mtuci.demo.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.mtuci.demo.auth.LoginRequest;
@@ -17,6 +18,7 @@ import ru.mtuci.demo.services.impl.response.TokenResponse;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -25,31 +27,23 @@ public class TokenServiceImpl implements TokenService {
 
     private final UserSessionRepository userSessionRepository;
     private final JwtTokenProvider jwtTokenProvider;
-    @Value("${jwt.expiration}")
-    private long jwtExpiration;
 
     @Override
     public LoginResponse issueTokenPair(String version, Authentication authentication, LoginRequest request) {
-        List<UserSession> existingSessions = userSessionRepository.findByEmail(request.getEmail());
-        existingSessions.forEach(session -> {
-            session.setStatus(SessionStatus.REVOKED);
-        });
-        userSessionRepository.saveAll(existingSessions);
+
         String accessToken = jwtTokenProvider.createAccessToken(request.getEmail(),
                 new HashSet<>(authentication.getAuthorities()));
 
-        String refreshToken = jwtTokenProvider.createRefreshToken(request.getEmail(), request.getDeviceId(),
-                new HashSet<>(authentication.getAuthorities()));
+        String refreshToken = jwtTokenProvider.createRefreshToken(request.getEmail(), request.getDeviceId());
 
         UserSession session = UserSession.builder()
                 .email(request.getEmail())
                 .deviceId(request.getDeviceId())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .accessTokenExpiry(System.currentTimeMillis() + jwtExpiration)
-                .refreshTokenExpiry(System.currentTimeMillis() + jwtExpiration * 2)
+                .accessTokenExpiry(jwtTokenProvider.getTokenExpiration(accessToken))
+                .refreshTokenExpiry(jwtTokenProvider.getTokenExpiration(refreshToken))
                 .status(SessionStatus.ACTIVE)
-                .version(version)
                 .build();
         userSessionRepository.save(session);
         return new LoginResponse(request.getEmail(), accessToken, refreshToken);
@@ -66,10 +60,12 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        String newAccessToken = jwtTokenProvider.createAccessToken(session.getEmail(),
-                new HashSet<>(jwtTokenProvider.getAuthorities(refreshToken)));
-        String newRefreshToken = jwtTokenProvider.createRefreshToken(session.getEmail(), session.getDeviceId(),
-                new HashSet<>(jwtTokenProvider.getAuthorities(refreshToken)));
+        String oldAccessToken = session.getAccessToken();
+
+        Set<GrantedAuthority> authorities = new HashSet<>(jwtTokenProvider.getAuthorities(oldAccessToken));
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(session.getEmail(), authorities);
+        String newRefreshToken = jwtTokenProvider.createRefreshToken(session.getEmail(), session.getDeviceId());
 
         session.setStatus(SessionStatus.USED);
         userSessionRepository.save(session);
@@ -79,10 +75,9 @@ public class TokenServiceImpl implements TokenService {
                 .deviceId(session.getDeviceId())
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
-                .accessTokenExpiry(System.currentTimeMillis() + jwtExpiration)
-                .refreshTokenExpiry(System.currentTimeMillis() + jwtExpiration * 2)
+                .accessTokenExpiry(jwtTokenProvider.getTokenExpiration(newAccessToken))
+                .refreshTokenExpiry(jwtTokenProvider.getTokenExpiration(newRefreshToken))
                 .status(SessionStatus.ACTIVE)
-                .version(session.getVersion())
                 .build();
         userSessionRepository.save(newSession);
 
@@ -99,4 +94,7 @@ public class TokenServiceImpl implements TokenService {
         }
         userSessionRepository.saveAll(sessions);
     }
+
+
+
 }

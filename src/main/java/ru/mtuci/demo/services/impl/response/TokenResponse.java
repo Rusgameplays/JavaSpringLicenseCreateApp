@@ -1,5 +1,5 @@
 package ru.mtuci.demo.services.impl.response;
-
+//gitlab...
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -40,7 +40,7 @@ public class UserSession {
     @Column(nullable = false)
     private SessionStatus status;
 
-    @Column(nullable = false)
-    private String version;
+    @Version
+    private Long version;
 }
 

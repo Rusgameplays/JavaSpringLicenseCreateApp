@@ -22,6 +22,9 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    @Value("${jwt.expiration2}")
+    private long jwtExpiration2;
+
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
@@ -38,15 +41,13 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String createRefreshToken(String username, String deviceId, Set<GrantedAuthority> authorities) {
+    public String createRefreshToken(String username, String deviceId) {
         return Jwts.builder()
                 .subject(username)
-                .claim("auth", authorities.stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.toList())) // Добавляем роли и права
+
                 .claim("token_type", "refresh")
                 .claim("device_id", deviceId)
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration * 2)) // Живет дольше access-токена
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration2))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -89,5 +90,17 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload().get("token_type", String.class);
     }
+
+    public Long getTokenExpiration(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration()
+                .getTime();
+    }
+
+
 
 }
