@@ -36,9 +36,6 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasAnyRole('ADMIN')")
 public class LicenseController {
     private final LicenseService licenseService;
-    private final DeviceService deviceService;
-    private final LicenseHistoryService licenseHistoryService;
-    private final DeviceLicenseRepository deviceLicenseRepository;
     private final UserRepository userRepository;
 
     @PostMapping("/add")
