@@ -82,7 +82,6 @@ public class LicenseController {
     }
 
 
-
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null) {

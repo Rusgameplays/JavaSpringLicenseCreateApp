@@ -13,9 +13,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/signatures")
 public interface SignatureService {
-    Signature createSignature(Signature signatureEntity);
+    Signature createSignature(Signature signatureEntity, String email);
 
-    Signature updateSignature(UUID id, Signature signatureEntity);
+    Signature updateSignature(UUID id, Signature signatureEntity, String email);
 
     List<Signature> getAllActiveSignatures();
 
@@ -24,5 +24,6 @@ public interface SignatureService {
 
     List<Signature> getSignaturesByIds(List<UUID> ids);
 
-    void deleteSignature(UUID id);
+
+    void deleteSignature(UUID id, String email);
 }

@@ -1,40 +1,48 @@
 package ru.mtuci.demo.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import ru.mtuci.demo.model.Signature;
+import ru.mtuci.demo.model.User;
+import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.SignatureService;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/signatures")
 public class SignatureController {
     @Autowired
     private SignatureService signatureService;
+    private final UserRepository userRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public ResponseEntity<Signature> createSignature(@RequestBody Signature signatureEntity) {
         try {
-            Signature createdSignature = signatureService.createSignature(signatureEntity);
+            User authenticatedUser = getAuthenticatedUser();
+            Signature createdSignature = signatureService.createSignature(signatureEntity, authenticatedUser.getEmail());
             return new ResponseEntity<>(createdSignature, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<Signature> updateSignature(@PathVariable UUID id, @RequestBody Signature signatureEntity) {
+    @PutMapping("/update")
+    public ResponseEntity<Signature> updateSignature(@RequestParam UUID id, @RequestBody Signature signatureEntity) {
         try {
-            Signature updatedSignature = signatureService.updateSignature(id, signatureEntity);
+            User authenticatedUser = getAuthenticatedUser();
+            Signature updatedSignature = signatureService.updateSignature(id, signatureEntity, authenticatedUser.getEmail());
             return new ResponseEntity<>(updatedSignature, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
@@ -70,8 +78,17 @@ public class SignatureController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteSignature(@PathVariable UUID id) {
-        signatureService.deleteSignature(id);
+        User authenticatedUser = getAuthenticatedUser();
+        signatureService.deleteSignature(id, authenticatedUser.getEmail());
         return ResponseEntity.noContent().build();
     }
 
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            String username = (String) authentication.getPrincipal();
+            return userRepository.findByEmail(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        }
+        return null;
+    }
 }
