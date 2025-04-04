@@ -2,7 +2,10 @@ package ru.mtuci.demo.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.mtuci.demo.model.Audit;
@@ -31,6 +34,9 @@ public class SignatureServiceImpl implements SignatureService {
     private AuditRepository auditRepository;
     @Autowired
     private ObjectMapper objectMapper;
+
+    private static final Logger logger = LoggerFactory.getLogger(SignatureServiceImpl.class);
+    private LocalDateTime lastCheckTime = LocalDateTime.now().minusDays(1);
 
     private static final String SECRET_KEY = "secret-key";  // потом
 
@@ -157,7 +163,7 @@ public class SignatureServiceImpl implements SignatureService {
         history.setOffsetStart(signature.getOffsetStart());
         history.setOffsetEnd(signature.getOffsetEnd());
         history.setDigitalSignature(signature.getDigitalSignature());
-        history.setStatus(signature.getStatus()); // Сохраняем старый статус
+        history.setStatus(signature.getStatus());
         history.setUpdatedAt(signature.getUpdatedAt());
 
         historyRepository.save(history);
@@ -209,6 +215,33 @@ public class SignatureServiceImpl implements SignatureService {
         }
     }
 
+    @Scheduled(cron = "0 0 0 * * *")
+    public void scheduledSignatureVerification() {
+        logger.info("Запущена плановая проверка ЭЦП");
 
+        List<Signature> updatedSignatures = getSignaturesUpdatedSince(lastCheckTime);
+        LocalDateTime currentCheckTime = LocalDateTime.now();
+
+        for (Signature signature : updatedSignatures) {
+            try {
+                byte[] actualSignature = generateDigitalSignature(signature);
+                if (!Arrays.equals(signature.getDigitalSignature(), actualSignature)) {
+                    logger.error("Несовпадение ЭЦП у сигнатуры с ID: {}", signature.getId());
+
+                    saveSignatureHistory(signature);
+
+                    signature.setStatus(StatusSignature.CORRUPTED);
+                    signature.setUpdatedAt(currentCheckTime);
+                    signatureRepository.save(signature);
+
+                    saveAuditRecord(signature.getId(), "AutoCheck", "CORRUPTED", "{\"digitalSignature\": \"mismatch\"}");
+                }
+            } catch (Exception e) {
+                logger.error("Ошибка при проверке ЭЦП сигнатуры с ID: {}", signature.getId(), e);
+            }
+        }
+
+        lastCheckTime = currentCheckTime;
+    }
 
 }
