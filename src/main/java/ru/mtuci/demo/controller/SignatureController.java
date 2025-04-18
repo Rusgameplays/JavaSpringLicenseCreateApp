@@ -2,12 +2,14 @@ package ru.mtuci.demo.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import ru.mtuci.demo.model.Signature;
 import ru.mtuci.demo.model.User;
@@ -25,6 +27,15 @@ public class SignatureController {
     @Autowired
     private SignatureService signatureService;
     private final UserRepository userRepository;
+
+    private User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            String username = (String) authentication.getPrincipal();
+            return userRepository.findByEmail(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
+        }
+        return null;
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
@@ -83,12 +94,43 @@ public class SignatureController {
         return ResponseEntity.noContent().build();
     }
 
-    private User getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null) {
-            String username = (String) authentication.getPrincipal();
-            return userRepository.findByEmail(username).orElseThrow(() -> new IllegalArgumentException("User not found"));
-        }
-        return null;
+    @GetMapping(value = "/export", produces = MediaType.MULTIPART_MIXED_VALUE)
+    public ResponseEntity<MultiValueMap<String, Object>> exportSignatures() throws Exception {
+        List<Signature> signatures = signatureService.getAllActiveSignatures();
+
+        byte[] dataFile = signatureService.serializeSignaturesToBinary(signatures);
+        byte[] manifestFile = signatureService.buildManifest(signatures);
+
+        ByteArrayResource dataResource = new ByteArrayResource(dataFile) {
+            @Override
+            public String getFilename() {
+                return "data.bin";
+            }
+        };
+
+        ByteArrayResource manifestResource = new ByteArrayResource(manifestFile) {
+            @Override
+            public String getFilename() {
+                return "manifest.txt";
+            }
+        };
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new HttpEntity<>(dataResource, createHeaders("data.bin", "application/octet-stream")));
+        body.add("file", new HttpEntity<>(manifestResource, createHeaders("manifest.txt", "text/plain")));
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.MULTIPART_MIXED)
+                .body(body);
     }
+
+    private HttpHeaders createHeaders(String filename, String contentType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(contentType));
+        headers.setContentDisposition(ContentDisposition.builder("attachment").filename(filename).build());
+        return headers;
+    }
+
+
+
 }

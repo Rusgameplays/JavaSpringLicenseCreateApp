@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mtuci.demo.model.Signature;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,4 +27,9 @@ public interface SignatureService {
 
 
     void deleteSignature(UUID id, String email);
+
+
+    byte[] serializeSignaturesToBinary(List<Signature> signatures) throws IOException;
+
+    byte[] buildManifest(List<Signature> signatures) throws Exception;
 }

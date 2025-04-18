@@ -19,6 +19,12 @@ import ru.mtuci.demo.model.StatusSignature;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -243,5 +249,105 @@ public class SignatureServiceImpl implements SignatureService {
 
         lastCheckTime = currentCheckTime;
     }
+
+    public byte[] serializeSignaturesToBinary(List<Signature> signatures) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        for (Signature sig : signatures) {
+
+            ByteBuffer uuidBuffer = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN);
+            uuidBuffer.putLong(sig.getId().getMostSignificantBits());
+            uuidBuffer.putLong(sig.getId().getLeastSignificantBits());
+            baos.write(uuidBuffer.array());
+
+            byte[] threatNameBytes = sig.getThreatName().getBytes(StandardCharsets.UTF_8);
+            ByteBuffer threatNameLength = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(threatNameBytes.length);
+            baos.write(threatNameLength.array());
+            baos.write(threatNameBytes);
+
+            baos.write(sig.getFirstBytes());
+
+            byte[] remainderHashBytes = sig.getRemainderHash().getBytes(StandardCharsets.UTF_8);
+            ByteBuffer remainderHashLength = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(remainderHashBytes.length);
+            baos.write(remainderHashLength.array());
+            baos.write(remainderHashBytes);
+
+            ByteBuffer remainderLength = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(sig.getRemainderLength());
+            baos.write(remainderLength.array());
+
+            byte[] fileTypeBytes = sig.getFileType().getBytes(StandardCharsets.UTF_8);
+            ByteBuffer fileTypeLength = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(fileTypeBytes.length);
+            baos.write(fileTypeLength.array());
+            baos.write(fileTypeBytes);
+
+            ByteBuffer offsetStart = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(sig.getOffsetStart());
+            baos.write(offsetStart.array());
+
+            ByteBuffer offsetEnd = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(sig.getOffsetEnd());
+            baos.write(offsetEnd.array());
+        }
+
+        return baos.toByteArray();
+    }
+
+
+    public byte[] buildManifest(List<Signature> signatures) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        baos.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(signatures.size()).array());
+
+        for (Signature sig : signatures) {
+            baos.write(ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
+                    .putLong(sig.getId().getMostSignificantBits())
+                    .putLong(sig.getId().getLeastSignificantBits())
+                    .array());
+
+            byte[] digitalSignature = sig.getDigitalSignature();
+            baos.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(digitalSignature.length).array());
+            baos.write(digitalSignature);
+        }
+
+        byte[] manifestData = baos.toByteArray();
+        byte[] manifestSignature = generateManifestSignature(manifestData);
+
+        baos.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(manifestSignature.length).array());
+        baos.write(manifestSignature);
+
+        return baos.toByteArray();
+    }
+
+
+//    private void writeIntLE(DataOutputStream dos, int value) throws IOException {
+//        dos.writeByte(value & 0xFF);
+//        dos.writeByte((value >> 8) & 0xFF);
+//        dos.writeByte((value >> 16) & 0xFF);
+//        dos.writeByte((value >> 24) & 0xFF);
+//    }
+//
+//    private void writeLongLE(DataOutputStream dos, long value) throws IOException {
+//        dos.writeByte((int)(value) & 0xFF);
+//        dos.writeByte((int)(value >> 8) & 0xFF);
+//        dos.writeByte((int)(value >> 16) & 0xFF);
+//        dos.writeByte((int)(value >> 24) & 0xFF);
+//        dos.writeByte((int)(value >> 32) & 0xFF);
+//        dos.writeByte((int)(value >> 40) & 0xFF);
+//        dos.writeByte((int)(value >> 48) & 0xFF);
+//        dos.writeByte((int)(value >> 56) & 0xFF);
+//    }
+//
+//    private void writeBytesWithLengthLE(DataOutputStream dos, byte[] bytes) throws IOException {
+//        writeIntLE(dos, bytes.length);
+//        dos.write(bytes);
+//    }
+
+
+    private byte[] generateManifestSignature(byte[] data) throws Exception {
+        SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(secretKey);
+        return mac.doFinal(data);
+    }
+
+
 
 }
