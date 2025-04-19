@@ -11,8 +11,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import ru.mtuci.demo.model.Audit;
 import ru.mtuci.demo.model.Signature;
+import ru.mtuci.demo.model.StatusSignature;
 import ru.mtuci.demo.model.User;
+import ru.mtuci.demo.repo.AuditRepository;
 import ru.mtuci.demo.repo.UserRepository;
 import ru.mtuci.demo.services.SignatureService;
 
@@ -27,6 +30,7 @@ public class SignatureController {
     @Autowired
     private SignatureService signatureService;
     private final UserRepository userRepository;
+    private final AuditRepository auditRepository;
 
     private User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -49,6 +53,7 @@ public class SignatureController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/update")
     public ResponseEntity<Signature> updateSignature(@RequestParam UUID id, @RequestBody Signature signatureEntity) {
         try {
@@ -60,14 +65,34 @@ public class SignatureController {
         }
     }
 
-
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ResponseEntity<List<Signature>> getAllSignatures() {
         List<Signature> signatures = signatureService.getAllActiveSignatures();
         return ResponseEntity.ok(signatures);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/deleted")
+    public ResponseEntity<List<Signature>> getDeletedSignatures() {
+        List<Signature> signatures = signatureService.getSignaturesByStatus(StatusSignature.DELETED);
+        return ResponseEntity.ok(signatures);
+    }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/corrupted")
+    public ResponseEntity<List<Signature>> getCorruptedSignatures() {
+        List<Signature> signatures = signatureService.getSignaturesByStatus(StatusSignature.CORRUPTED);
+        return ResponseEntity.ok(signatures);
+    }
+
+    @GetMapping("/audit")
+    public ResponseEntity<List<Audit>> getAllAuditRecords() {
+        List<Audit> auditRecords = auditRepository.findAll();
+        return ResponseEntity.ok(auditRecords);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/getByTime")
     public ResponseEntity<List<Signature>> getSignatures(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
@@ -79,7 +104,7 @@ public class SignatureController {
         return ResponseEntity.ok(signatures);
     }
 
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/getByIds")
     public ResponseEntity<List<Signature>> getSignaturesByIds(@RequestBody List<UUID> ids) {
         List<Signature> signatures = signatureService.getSignaturesByIds(ids);
@@ -111,13 +136,13 @@ public class SignatureController {
         ByteArrayResource manifestResource = new ByteArrayResource(manifestFile) {
             @Override
             public String getFilename() {
-                return "manifest.txt";
+                return "manifest.bin";
             }
         };
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new HttpEntity<>(dataResource, createHeaders("data.bin", "application/octet-stream")));
-        body.add("file", new HttpEntity<>(manifestResource, createHeaders("manifest.txt", "text/plain")));
+        body.add("file", new HttpEntity<>(manifestResource, createHeaders("manifest.bin", "text/plain")));
 
         return ResponseEntity.ok()
                 .contentType(MediaType.MULTIPART_MIXED)

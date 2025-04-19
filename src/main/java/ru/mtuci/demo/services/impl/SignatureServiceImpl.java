@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -43,15 +45,15 @@ public class SignatureServiceImpl implements SignatureService {
 
     private static final Logger logger = LoggerFactory.getLogger(SignatureServiceImpl.class);
     private LocalDateTime lastCheckTime = LocalDateTime.now().minusDays(1);
-
-    private static final String SECRET_KEY = "secret-key";  // потом
+    @Value("${digitalKey2}")
+    private String SECRET_KEY;
 
     @Override
     public Signature createSignature(Signature signatureEntity, String email) {
 
         signatureEntity.setUpdatedAt(LocalDateTime.now());
 
-        signatureEntity.setDigitalSignature(generateDigitalSignature(signatureEntity));
+        signatureEntity.setDigitalSignature(generateDigitalSignature(serializeSignatureData(signatureEntity).getBytes()));
 
         Signature savedSignature = signatureRepository.save(signatureEntity);
 
@@ -96,21 +98,20 @@ public class SignatureServiceImpl implements SignatureService {
         }
 
         existingSignature.setUpdatedAt(LocalDateTime.now());
-        existingSignature.setDigitalSignature(generateDigitalSignature(existingSignature));
+        existingSignature.setDigitalSignature(generateDigitalSignature(serializeSignatureData(existingSignature).getBytes()));
 
         return signatureRepository.save(existingSignature);
     }
 
 
-    private byte[] generateDigitalSignature(Signature signatureEntity) {
+    private byte[] generateDigitalSignature(byte[] data) {
         try {
-            String data = serializeSignatureData(signatureEntity);
 
             SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), "HmacSHA256");
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(secretKey);
 
-            return mac.doFinal(data.getBytes());
+            return mac.doFinal(data);
         } catch (Exception e) {
             throw new RuntimeException("Ошибка при создании цифровой подписи", e);
         }
@@ -157,6 +158,10 @@ public class SignatureServiceImpl implements SignatureService {
         saveAuditRecord(signature.getId(), email, "DELETED", "{\"status\": \"DELETED\"}");
     }
 
+    public List<Signature> getSignaturesByStatus(StatusSignature status) {
+        return signatureRepository.findByStatus(status);
+    }
+
     private void saveSignatureHistory(Signature signature) {
         History history = new History();
         history.setSignatureId(signature.getId());
@@ -189,29 +194,33 @@ public class SignatureServiceImpl implements SignatureService {
     private String getChangedFields(Signature oldSignature, Signature newSignature) {
         Map<String, String> changes = new HashMap<>();
 
-        if (!oldSignature.getThreatName().equals(newSignature.getThreatName())) {
+        if (newSignature.getThreatName() != null && !Objects.equals(oldSignature.getThreatName(), newSignature.getThreatName())) {
             changes.put("threatName", "Old: " + oldSignature.getThreatName() + " | New: " + newSignature.getThreatName());
         }
-        if (!Arrays.equals(oldSignature.getFirstBytes(), newSignature.getFirstBytes())) {
+        if (newSignature.getFirstBytes() != null && !Arrays.equals(oldSignature.getFirstBytes(), newSignature.getFirstBytes())) {
             changes.put("firstBytes", "Old: " + Arrays.toString(oldSignature.getFirstBytes()) + " | New: " + Arrays.toString(newSignature.getFirstBytes()));
         }
-        if (!oldSignature.getRemainderHash().equals(newSignature.getRemainderHash())) {
+        if (newSignature.getRemainderHash() != null && !Objects.equals(oldSignature.getRemainderHash(), newSignature.getRemainderHash())) {
             changes.put("remainderHash", "Old: " + oldSignature.getRemainderHash() + " | New: " + newSignature.getRemainderHash());
         }
-        if (oldSignature.getRemainderLength() != newSignature.getRemainderLength()) {
+        if (newSignature.getRemainderLength() != 0 && !Objects.equals(oldSignature.getRemainderLength(), newSignature.getRemainderLength())) {
             changes.put("remainderLength", "Old: " + oldSignature.getRemainderLength() + " | New: " + newSignature.getRemainderLength());
         }
-        if (!oldSignature.getFileType().equals(newSignature.getFileType())) {
+        if (newSignature.getFileType() != null && !Objects.equals(oldSignature.getFileType(), newSignature.getFileType())) {
             changes.put("fileType", "Old: " + oldSignature.getFileType() + " | New: " + newSignature.getFileType());
         }
-        if (oldSignature.getOffsetStart() != newSignature.getOffsetStart()) {
+        if (newSignature.getOffsetStart() != 0 && !Objects.equals(oldSignature.getOffsetStart(), newSignature.getOffsetStart())) {
             changes.put("offsetStart", "Old: " + oldSignature.getOffsetStart() + " | New: " + newSignature.getOffsetStart());
         }
-        if (oldSignature.getOffsetEnd() != newSignature.getOffsetEnd()) {
+        if (newSignature.getOffsetEnd() != 0 && !Objects.equals(oldSignature.getOffsetEnd(), newSignature.getOffsetEnd())) {
             changes.put("offsetEnd", "Old: " + oldSignature.getOffsetEnd() + " | New: " + newSignature.getOffsetEnd());
         }
-        if (oldSignature.getStatus() != newSignature.getStatus()) {
+        if (newSignature.getStatus() != null && !Objects.equals(oldSignature.getStatus(), newSignature.getStatus())) {
             changes.put("status", "Old: " + oldSignature.getStatus() + " | New: " + newSignature.getStatus());
+        }
+
+        if (changes.isEmpty()) {
+            return null;
         }
 
         try {
@@ -220,6 +229,7 @@ public class SignatureServiceImpl implements SignatureService {
             throw new RuntimeException("Ошибка при сериализации изменений", e);
         }
     }
+
 
     @Scheduled(cron = "0 0 0 * * *")
     public void scheduledSignatureVerification() {
@@ -230,7 +240,7 @@ public class SignatureServiceImpl implements SignatureService {
 
         for (Signature signature : updatedSignatures) {
             try {
-                byte[] actualSignature = generateDigitalSignature(signature);
+                byte[] actualSignature = generateDigitalSignature(serializeSignatureData(signature).getBytes());
                 if (!Arrays.equals(signature.getDigitalSignature(), actualSignature)) {
                     logger.error("Несовпадение ЭЦП у сигнатуры с ID: {}", signature.getId());
 
@@ -308,7 +318,7 @@ public class SignatureServiceImpl implements SignatureService {
         }
 
         byte[] manifestData = baos.toByteArray();
-        byte[] manifestSignature = generateManifestSignature(manifestData);
+        byte[] manifestSignature = generateDigitalSignature(manifestData);
 
         baos.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(manifestSignature.length).array());
         baos.write(manifestSignature);
@@ -339,15 +349,5 @@ public class SignatureServiceImpl implements SignatureService {
 //        writeIntLE(dos, bytes.length);
 //        dos.write(bytes);
 //    }
-
-
-    private byte[] generateManifestSignature(byte[] data) throws Exception {
-        SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(secretKey);
-        return mac.doFinal(data);
-    }
-
-
 
 }

@@ -12,6 +12,4 @@ public interface SignatureRepository extends JpaRepository<Signature, UUID> {
     List<Signature> findByStatus(StatusSignature status);
     List<Signature> findByUpdatedAtAfter(LocalDateTime updatedAt);
 
-    List<Signature> findByStatusIn(List<StatusSignature> statuses);
-
 }

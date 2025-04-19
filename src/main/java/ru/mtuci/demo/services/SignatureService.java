@@ -4,6 +4,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.mtuci.demo.model.Signature;
+import ru.mtuci.demo.model.StatusSignature;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -32,4 +33,6 @@ public interface SignatureService {
     byte[] serializeSignaturesToBinary(List<Signature> signatures) throws IOException;
 
     byte[] buildManifest(List<Signature> signatures) throws Exception;
+
+    List<Signature> getSignaturesByStatus(StatusSignature statusSignature);
 }
